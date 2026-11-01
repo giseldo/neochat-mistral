@@ -87,7 +87,7 @@ fn tune(style: &mut egui::Style, dark: bool) {
     style.spacing.interact_size.y = 30.0;
     style.spacing.combo_width = 170.0;
     style.spacing.combo_height = 420.0;
-    style.spacing.scroll.bar_width = 6.0;
+    style.spacing.scroll.bar_width = 4.0;
     style.spacing.scroll.floating = false;
     style.spacing.scroll.dormant_background_opacity = 0.15;
     style.spacing.scroll.active_background_opacity = 0.3;
@@ -120,7 +120,7 @@ fn tune(style: &mut egui::Style, dark: bool) {
 fn visuals_dark() -> egui::Visuals {
     let mut v = egui::Visuals::dark();
     let text = Color32::from_rgb(0xEC, 0xEC, 0xF0);
-    let muted = Color32::from_rgb(0x8E, 0x8E, 0x9E);
+    let muted = Color32::from_rgb(0xAC, 0xAC, 0xB8);
     let border = Color32::from_rgb(0x2A, 0x2A, 0x32);
 
     v.panel_fill = Color32::from_rgb(0x14, 0x14, 0x17);
@@ -156,7 +156,7 @@ fn visuals_dark() -> egui::Visuals {
 fn visuals_light() -> egui::Visuals {
     let mut v = egui::Visuals::light();
     let text = Color32::from_rgb(0x1A, 0x1A, 0x1E);
-    let muted = Color32::from_rgb(0x78, 0x78, 0x85);
+    let muted = Color32::from_rgb(0x62, 0x62, 0x70);
     let border = Color32::from_rgb(0xE8, 0xE8, 0xED);
 
     v.panel_fill = Color32::from_rgb(0xFC, 0xFC, 0xFD);
@@ -239,7 +239,7 @@ pub fn chat_colors(theme: Theme) -> ChatColors {
             assistant_bubble: Color32::from_rgb(0x18, 0x18, 0x1D),
             assistant_text: Color32::from_rgb(0xEC, 0xEC, 0xF0),
             assistant_border: Color32::from_rgb(0x25, 0x25, 0x2D),
-            muted: Color32::from_rgb(0x88, 0x88, 0x96),
+            muted: Color32::from_rgb(0xAC, 0xAC, 0xB8),
             accent: ACCENT_DARK,
         },
         Theme::Light => ChatColors {
@@ -252,7 +252,7 @@ pub fn chat_colors(theme: Theme) -> ChatColors {
             assistant_bubble: Color32::from_rgb(0xFF, 0xFF, 0xFF),
             assistant_text: Color32::from_rgb(0x1A, 0x1A, 0x1E),
             assistant_border: Color32::from_rgb(0xEA, 0xEA, 0xF0),
-            muted: Color32::from_rgb(0x78, 0x78, 0x85),
+            muted: Color32::from_rgb(0x62, 0x62, 0x70),
             accent: ACCENT_LIGHT,
         },
     }

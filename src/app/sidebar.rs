@@ -20,7 +20,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
 
     let panel_resp = Panel::left("sidebar")
         .resizable(true)
-        .default_size(248.0)
+        .default_size(270.0)
         .min_size(208.0)
         .max_size(340.0)
         .frame(
@@ -65,10 +65,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                         egui::FontId::proportional(13.0),
                         fg,
                     );
-                    if resp
-                        .on_hover_text("Abrir configurações (Ctrl+,)")
-                        .clicked()
-                    {
+                    if resp.on_hover_text("Abrir configurações (Ctrl+,)").clicked() {
                         app.open_settings();
                     }
                 });
@@ -127,13 +124,31 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
 
                     ui.add_space(12.0);
 
+                    let search_id = ui.make_persistent_id("conversation_search");
+                    let mut search =
+                        ui.data_mut(|data| data.get_temp::<String>(search_id).unwrap_or_default());
+                    if ui
+                        .add(
+                            TextEdit::singleline(&mut search)
+                                .hint_text("Buscar conversas")
+                                .desired_width(f32::INFINITY),
+                        )
+                        .changed()
+                    {
+                        ui.data_mut(|data| data.insert_temp(search_id, search.clone()));
+                    }
+                    ui.add_space(8.0);
+                    let search = search.trim().to_lowercase();
                     let active = app.store.conversations.active.clone();
                     let mut rows: Vec<(String, String, i64)> = app
                         .store
                         .conversations
                         .items
                         .iter()
-                        .filter(|c| !c.messages.is_empty() || app.store.conversations.items.len() == 1)
+                        .filter(|c| {
+                            (!c.messages.is_empty() || app.store.conversations.items.len() == 1)
+                                && (search.is_empty() || c.title.to_lowercase().contains(&search))
+                        })
                         .map(|conversation| {
                             (
                                 conversation.id.clone(),
@@ -154,6 +169,13 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                         .id_salt("conversation_list")
                         .auto_shrink([false, false])
                         .show(ui, |ui| {
+                            if rows.is_empty() && !search.is_empty() {
+                                ui.label(
+                                    RichText::new("Nenhuma conversa encontrada")
+                                        .small()
+                                        .color(colors.muted),
+                                );
+                            }
                             let mut current_group = "";
                             for (id, title, updated) in &rows {
                                 let group = date_group(*updated);
@@ -317,11 +339,8 @@ fn row(
                     ],
                     Stroke::new(1.4, ren_color),
                 );
-                ui.painter().circle_filled(
-                    egui::pos2(rc.x - 4.0, rc.y + 4.0),
-                    0.9,
-                    ren_color,
-                );
+                ui.painter()
+                    .circle_filled(egui::pos2(rc.x - 4.0, rc.y + 4.0), 0.9, ren_color);
                 if ren_resp.on_hover_text("Renomear conversa").clicked() {
                     *action = Some(RowAction::Rename(id.to_string()));
                     clicked_inline_button = true;

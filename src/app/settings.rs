@@ -37,7 +37,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
         .collapsible(false)
         .resizable(false)
         .default_width(490.0)
-        .default_height(max_height)
+        .default_height(max_height.min(720.0))
         .max_width(max_width)
         .max_height(max_height)
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
@@ -46,7 +46,20 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                 .id_salt("settings_content")
                 .max_height((max_height - 150.0).max(40.0))
                 .show(ui, |ui| {
-                    ui.label(RichText::new("Chave da API Mistral").strong());
+                    ui.label(RichText::new("Conta Mistral").heading());
+                    if is_logged_in {
+                        ui.label(RichText::new("● Conectado à Mistral").color(ui.visuals().hyperlink_color));
+                        if ui.add_enabled(!login_pending, Button::new("Sair da conta")).on_hover_text("Desconectar e remover a chave salva").clicked() { logout = true; }
+                    } else {
+                        let label = if login_pending { "Aguardando login no navegador..." } else { "Entrar com a conta Mistral" };
+                        if ui.add_enabled(!login_pending, Button::new(label)).clicked() { login = true; }
+                    }
+                    if let Some((ok, message)) = &login_status {
+                        let color = if *ok { ui.visuals().hyperlink_color } else { ui.visuals().error_fg_color };
+                        ui.label(RichText::new(message).small().color(color));
+                    }
+                    ui.add_space(6.0);
+                    ui.label(RichText::new("Chave da API").strong());
                     ui.add(
                         TextEdit::singleline(&mut app.settings_key)
                             .password(true)
@@ -62,48 +75,8 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     ui.separator();
                     ui.add_space(6.0);
 
-                    ui.label(RichText::new("Conta Mistral").strong());
                     ui.horizontal(|ui| {
-                        let label = if login_pending {
-                            "Aguardando o login no navegador..."
-                        } else {
-                            "Entrar com a conta Mistral"
-                        };
-                        if ui
-                            .add_enabled(!login_pending, Button::new(label))
-                            .clicked()
-                        {
-                            login = true;
-                        }
-
-                        if ui
-                            .add_enabled(!login_pending && is_logged_in, Button::new("Sair da conta"))
-                            .on_hover_text("Desconectar da conta Mistral e remover a chave salva")
-                            .clicked()
-                        {
-                            logout = true;
-                        }
-                    });
-                    if let Some((ok, message)) = &login_status {
-                        let color = if *ok {
-                            Color32::from_rgb(0x3F, 0xB9, 0x50)
-                        } else {
-                            ui.visuals().error_fg_color
-                        };
-                        ui.label(RichText::new(message).small().color(color));
-                    } else if is_logged_in {
-                        ui.label(
-                            RichText::new("Conectado à Mistral")
-                                .small()
-                                .color(Color32::from_rgb(0x3F, 0xB9, 0x50)),
-                        );
-                    }
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(6.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new("Modelo").strong());
+                        ui.label(RichText::new("Modelo").heading());
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             let fetch_label = if models_pending {
                                 "Carregando..."
@@ -137,6 +110,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                                 ui.selectable_value(&mut app.settings_model, model.clone(), model);
                             }
                         });
+                    ui.label(RichText::new("Identificador do modelo selecionado na API").small().color(ui.visuals().weak_text_color()));
                     if app.settings_model != prev_model {
                         app.store.config.model = app.settings_model.clone();
                         app.store.save();
@@ -158,7 +132,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                         || !app.settings_max_tokens.trim().is_empty()
                         || !app.settings_prompt_caching;
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new("Parâmetros de geração").strong());
+                        ui.label(RichText::new("Geração").heading());
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui
                                 .add_enabled(
@@ -193,33 +167,19 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     );
 
                     ui.add_space(6.0);
-                    ui.horizontal(|ui| {
-                        ui.label("Máximo de tokens:");
-                        ui.add(
-                            TextEdit::singleline(&mut app.settings_max_tokens)
-                                .desired_width(145.0)
-                                .hint_text("Automático"),
-                        );
-                        app.settings_max_tokens.retain(|c| c.is_ascii_digit());
-
-                        for preset in ["512", "2048", "4096"] {
-                            if ui
-                                .small_button(preset)
-                                .on_hover_text(format!("Limitar resposta a {preset} tokens"))
-                                .clicked()
-                            {
-                                app.settings_max_tokens = preset.to_string();
+                    ui.label(RichText::new("Máximo de tokens").strong());
+                    ui.horizontal_wrapped(|ui| {
+                        for (label, value) in [("Automático", ""), ("512", "512"), ("2048", "2048"), ("4096", "4096")] {
+                            if ui.selectable_label(app.settings_max_tokens == value, label).clicked() {
+                                app.settings_max_tokens = value.to_string();
                             }
                         }
-                        if !app.settings_max_tokens.is_empty()
-                            && ui
-                                .small_button("Auto")
-                                .on_hover_text("Sem limite fixo (usa o padrão do modelo)")
-                                .clicked()
-                        {
-                            app.settings_max_tokens.clear();
-                        }
                     });
+                    ui.horizontal(|ui| {
+                        ui.label("Personalizado:");
+                        ui.add(TextEdit::singleline(&mut app.settings_max_tokens).desired_width(110.0).hint_text("Automático"));
+                    });
+                    app.settings_max_tokens.retain(|c| c.is_ascii_digit());
 
                     ui.add_space(6.0);
                     ui.checkbox(
@@ -241,6 +201,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     ui.separator();
                     ui.add_space(6.0);
 
+                    ui.label(RichText::new("Aparência").heading());
                     ui.label(RichText::new("Tema").strong());
                     ui.horizontal(|ui| {
                         for choice in [
@@ -248,7 +209,9 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                             ThemeChoice::Claro,
                             ThemeChoice::Escuro,
                         ] {
-                            ui.radio_value(&mut app.settings_theme, choice, choice.label());
+                            if ui.selectable_label(app.settings_theme == choice, choice.label()).clicked() {
+                                app.settings_theme = choice;
+                            }
                         }
                     });
 
