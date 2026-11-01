@@ -7,6 +7,11 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
         return;
     }
 
+    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        app.settings_open = false;
+        return;
+    }
+
     let mut open = true;
     let mut save = false;
     let mut test = false;
@@ -23,11 +28,18 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     let models = app.model_list();
     let is_logged_in = !app.settings_key.trim().is_empty() || !app.api_key.trim().is_empty();
 
+    let screen = ctx.content_rect();
+    let max_height = (screen.height() - 32.0).max(120.0);
+    let max_width = (screen.width() - 32.0).max(280.0);
+
     Window::new("Configurações")
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
+        .vscroll(true)
         .default_width(490.0)
+        .max_width(max_width)
+        .max_height(max_height)
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
             ui.label(RichText::new("Chave da API Mistral").strong());
@@ -109,8 +121,9 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                 });
             });
             let prev_model = app.settings_model.clone();
+            let combo_width = (ui.available_width() - 8.0).clamp(200.0, 455.0);
             ComboBox::from_id_salt("settings_model")
-                .width(455.0)
+                .width(combo_width)
                 .height(360.0)
                 .selected_text(app.settings_model.clone())
                 .show_ui(ui, |ui| {
