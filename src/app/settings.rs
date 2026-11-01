@@ -28,6 +28,9 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     let models = app.model_list();
     let is_logged_in = !app.settings_key.trim().is_empty() || !app.api_key.trim().is_empty();
 
+    let tab_id = egui::Id::unique("settings_tab");
+    let mut tab = ctx.data_mut(|data| data.get_temp::<usize>(tab_id).unwrap_or(0));
+
     let screen = ctx.content_rect();
     let max_height = (screen.height() - 32.0).max(120.0);
     let max_width = (screen.width() - 32.0).max(280.0);
@@ -36,17 +39,30 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
-        .default_width(490.0)
+        .default_width(530.0)
         .default_height(max_height.min(720.0))
         .max_width(max_width)
         .max_height(max_height)
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
+            ui.horizontal_wrapped(|ui| {
+                for (index, label) in ["Conta", "Modelo", "Geração", "Aparência", "Sobre"].iter().enumerate() {
+                    if ui.selectable_label(tab == index, *label).clicked() {
+                        tab = index;
+                    }
+                }
+            });
+            ui.add_space(4.0);
+            ui.separator();
+            ui.add_space(8.0);
             egui::ScrollArea::vertical()
                 .id_salt("settings_content")
-                .max_height((max_height - 150.0).max(40.0))
+                .max_height((max_height.min(720.0) - 180.0).max(40.0))
+                .min_scrolled_height((max_height.min(560.0) - 180.0).max(40.0))
                 .show(ui, |ui| {
+                    if tab == 0 {
                     ui.label(RichText::new("Conta Mistral").heading());
+                    ui.label(RichText::new("Gerencie sua conexão e chave de acesso.").small().color(ui.visuals().weak_text_color()));
                     if is_logged_in {
                         ui.label(RichText::new("● Conectado à Mistral").color(ui.visuals().hyperlink_color));
                         if ui.add_enabled(!login_pending, Button::new("Sair da conta")).on_hover_text("Desconectar e remover a chave salva").clicked() { logout = true; }
@@ -72,9 +88,15 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                         "https://console.mistral.ai/api-keys",
                     );
                     ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(6.0);
-
+                    ui.label(RichText::new("A chave é salva criptografada com o Windows (DPAPI).").small().color(ui.visuals().weak_text_color()));
+                    let test_label = if pending { "Testando..." } else { "Testar conexão" };
+                    if ui.add_enabled(!pending, Button::new(test_label)).clicked() { test = true; }
+                    if let Some((ok, message)) = &status {
+                        let color = if *ok { ui.visuals().hyperlink_color } else { ui.visuals().error_fg_color };
+                        ui.label(RichText::new(message).small().color(color));
+                    }
+                    }
+                    if tab == 1 {
                     ui.horizontal(|ui| {
                         ui.label(RichText::new("Modelo").heading());
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -97,7 +119,6 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                             }
                         });
                     });
-                    let prev_model = app.settings_model.clone();
                     let combo_width = (ui.available_width() - 8.0).clamp(200.0, 455.0);
                     ComboBox::from_id_salt("settings_model")
                         .width(combo_width)
@@ -111,10 +132,6 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                             }
                         });
                     ui.label(RichText::new("Identificador do modelo selecionado na API").small().color(ui.visuals().weak_text_color()));
-                    if app.settings_model != prev_model {
-                        app.store.config.model = app.settings_model.clone();
-                        app.store.save();
-                    }
                     if let Some((ok, message)) = &models_status {
                         let color = if *ok {
                             Color32::from_rgb(0x3F, 0xB9, 0x50)
@@ -124,10 +141,8 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                         ui.label(RichText::new(message).small().color(color));
                     }
 
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(6.0);
-
+                    }
+                    if tab == 2 {
                     let has_custom_params = (app.settings_temperature - DEFAULT_TEMPERATURE).abs() > 0.005
                         || !app.settings_max_tokens.trim().is_empty()
                         || !app.settings_prompt_caching;
@@ -197,11 +212,10 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                         .color(ui.visuals().weak_text_color()),
                     );
 
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(6.0);
-
+                    }
+                    if tab == 3 {
                     ui.label(RichText::new("Aparência").heading());
+                    ui.label(RichText::new("Escolha como o NeoChat aparece no seu computador.").small().color(ui.visuals().weak_text_color()));
                     ui.label(RichText::new("Tema").strong());
                     ui.horizontal(|ui| {
                         for choice in [
@@ -215,16 +229,8 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                         }
                     });
 
-                    ui.add_space(6.0);
-                    ui.label(
-                        RichText::new("A chave fica salva criptografada com o Windows (DPAPI).")
-                            .small()
-                            .color(ui.visuals().weak_text_color()),
-                    );
-
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.add_space(6.0);
+                    }
+                    if tab == 4 {
                     ui.label(RichText::new("Sobre o NeoChat").heading());
                     ui.label(format!("Versão {}", env!("CARGO_PKG_VERSION")));
                     ui.label("Desenvolvido por Giseldo");
@@ -237,6 +243,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                             .small()
                             .color(ui.visuals().weak_text_color()),
                     );
+                    }
                 });
 
             ui.separator();
@@ -250,26 +257,9 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                 if ui.button("Cancelar").clicked() {
                     close = true;
                 }
-                let test_label = if pending {
-                    "Testando..."
-                } else {
-                    "Testar conexão"
-                };
-                if ui.add_enabled(!pending, Button::new(test_label)).clicked() {
-                    test = true;
-                }
             });
-
-            if let Some((ok, message)) = &status {
-                ui.add_space(6.0);
-                let color = if *ok {
-                    Color32::from_rgb(0x3F, 0xB9, 0x50)
-                } else {
-                    ui.visuals().error_fg_color
-                };
-                ui.label(RichText::new(message).small().color(color));
-            }
         });
+    ctx.data_mut(|data| data.insert_temp(tab_id, tab));
 
     app.settings_open = open && !close;
     if test {
