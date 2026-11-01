@@ -13,6 +13,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     let mut fetch_models = false;
     let mut close = false;
     let mut login = false;
+    let mut logout = false;
     let pending = app.test_pending;
     let status = app.test_status.clone();
     let models_pending = app.models_pending;
@@ -20,6 +21,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     let login_pending = app.login_pending;
     let login_status = app.login_status.clone();
     let models = app.model_list();
+    let is_logged_in = !app.settings_key.trim().is_empty() || !app.api_key.trim().is_empty();
 
     Window::new("Configurações")
         .open(&mut open)
@@ -44,7 +46,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
             ui.separator();
             ui.add_space(6.0);
 
-            ui.label(RichText::new("Conta Mistral (navegador)").strong());
+            ui.label(RichText::new("Conta Mistral").strong());
             ui.horizontal(|ui| {
                 let label = if login_pending {
                     "Aguardando o login no navegador..."
@@ -57,6 +59,14 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                 {
                     login = true;
                 }
+
+                if ui
+                    .add_enabled(!login_pending && is_logged_in, Button::new("Sair da conta"))
+                    .on_hover_text("Desconectar da conta Mistral e remover a chave salva")
+                    .clicked()
+                {
+                    logout = true;
+                }
             });
             if let Some((ok, message)) = &login_status {
                 let color = if *ok {
@@ -65,6 +75,12 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     ui.visuals().error_fg_color
                 };
                 ui.label(RichText::new(message).small().color(color));
+            } else if is_logged_in {
+                ui.label(
+                    RichText::new("Conectado à Mistral")
+                        .small()
+                        .color(Color32::from_rgb(0x3F, 0xB9, 0x50)),
+                );
             }
             ui.add_space(10.0);
             ui.separator();
@@ -282,5 +298,8 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     }
     if login {
         app.start_login(ctx);
+    }
+    if logout {
+        app.logout();
     }
 }

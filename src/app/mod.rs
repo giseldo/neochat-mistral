@@ -238,6 +238,24 @@ impl NeoChat {
         }
     }
 
+    pub(super) fn logout(&mut self) {
+        if self.busy() {
+            self.stop();
+        }
+        self.login_rx = None;
+        self.login_pending = false;
+        self.api_key.clear();
+        self.settings_key.clear();
+        std::env::remove_var("MISTRAL_API_KEY");
+        if let Err(err) = secrets::clear_api_key() {
+            self.login_status = Some((false, format!("Falha ao desconectar da conta: {err:#}")));
+        } else {
+            self.login_status =
+                Some((true, "Conta desconectada com sucesso. Chave removida.".to_string()));
+        }
+        self.test_status = None;
+    }
+
     pub(super) fn model_list(&self) -> Vec<String> {
         let mut models: Vec<String> = if self.store.config.cached_models.is_empty() {
             crate::storage::MODELS
@@ -280,6 +298,7 @@ impl NeoChat {
         self.settings_prompt_caching = self.store.config.prompt_caching;
         self.test_status = None;
         self.models_status = None;
+        self.login_status = None;
         self.settings_open = true;
     }
 

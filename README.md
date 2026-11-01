@@ -1,5 +1,7 @@
 # NeoChat
 
+[Read in English](README.en.md)
+
 Cliente desktop em Rust para conversar com modelos da [Mistral](https://mistral.ai) via API, com streaming, Markdown, histórico de conversas e interface nativa em egui/eframe para Windows.
 
 ## Funcionalidades

@@ -42,6 +42,10 @@ pub fn save_api_key(key: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn clear_api_key() -> Result<()> {
+    save_api_key("")
+}
+
 pub fn load_api_key() -> Option<String> {
     let bytes = fs::read(secret_path()).ok()?;
     let plain = unprotect(&bytes).ok()?;
