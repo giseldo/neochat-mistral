@@ -224,14 +224,18 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
 
                     ui.add_space(10.0);
                     ui.separator();
+                    ui.add_space(6.0);
+                    ui.label(RichText::new("Sobre o NeoChat").heading());
+                    ui.label(format!("Versão {}", env!("CARGO_PKG_VERSION")));
+                    ui.label("Desenvolvido por Giseldo");
+                    ui.hyperlink_to(
+                        "Repositório do projeto",
+                        "https://github.com/giseldo/neochat-desktop-mistral",
+                    );
                     ui.label(
-                        RichText::new(format!(
-                            "neochat-desktop-mistral {} · dados em {}",
-                            env!("CARGO_PKG_VERSION"),
-                            crate::storage::data_dir().display()
-                        ))
-                        .small()
-                        .color(ui.visuals().weak_text_color()),
+                        RichText::new(format!("Dados em {}", crate::storage::data_dir().display()))
+                            .small()
+                            .color(ui.visuals().weak_text_color()),
                     );
                 });
 
