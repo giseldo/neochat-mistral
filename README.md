@@ -1,46 +1,48 @@
-# neochat-desktop-mistral
+# NeoChat
 
 [Read in English](README.en.md)
 
-Cliente desktop em Rust para conversar com modelos da [Mistral](https://mistral.ai) via API, com streaming, Markdown, histórico de conversas e interface nativa em egui/eframe para Windows.
+Cliente desktop para Windows, desenvolvido em Rust, para conversar com modelos disponíveis pela API da [Mistral](https://mistral.ai). Oferece respostas em streaming, Markdown e histórico local de conversas. A interface usa egui e eframe.
 
 ## Funcionalidades
 
-- Streaming de respostas com botão **Parar** (ou Esc).
-- Markdown na resposta (código, listas, tabelas) com botões **Copiar** e **Regenerar**.
-- Conversas múltiplas na barra lateral: criar, renomear (menu de contexto) e excluir.
-- Tema claro, escuro ou do sistema, com barra de título nativa acompanhando.
-- Chave de API salva com DPAPI (criptografia por usuário do Windows).
-- Atalhos: Enter envia, Shift+Enter quebra linha, Esc interrompe, Ctrl+N nova conversa, Ctrl+, configurações.
-- Versão de terminal (`neochat-cli`).
+- Respostas em streaming, com opção de interromper, copiar ou regenerar.
+- Conversas na barra lateral, com busca por título, criação, renomeação e exclusão.
+- Seleção de modelo na barra superior ou nas configurações, com opção de carregar os modelos disponíveis na API.
+- Ajustes de temperatura, limite de tokens, cache de contexto e tema claro, escuro ou do sistema.
+- Login pela conta Mistral ou uso de chave de API, protegida no Windows com DPAPI.
+- Métricas de geração quando disponíveis e cliente de terminal `neochat-cli`.
 
-## Requisitos
+## Requisitos para compilar
 
-- Windows 10/11 x64.
-- Rust estável (testado com 1.99.1) com toolchain MSVC.
-- Visual Studio Build Tools com "Desktop development with C++" (linker e Windows SDK, incluindo `rc.exe` para o ícone).
-- GPU com driver atualizado (renderização via wgpu/D3D12).
+- Windows 10 ou 11, 64 bits, com driver gráfico atualizado.
+- Rust estável com toolchain MSVC (testado com Rust 1.99.1).
+- Visual Studio Build Tools com a carga de trabalho **Desktop development with C++**, incluindo Windows SDK e `rc.exe`.
 
-## Como rodar
+## Executar
 
 ```powershell
 cargo run --release
 ```
 
-Na primeira execução, abra **Configurações** no canto superior direito e cole a chave criada em <https://console.mistral.ai/api-keys>. Também é possível usar a variável de ambiente:
+Abra **Configurações** na barra lateral ou pressione `Ctrl+,`. Na aba **Conta**, entre com a conta Mistral ou informe uma chave obtida no [console da Mistral](https://console.mistral.ai/api-keys). Para confirmar as configurações editadas, clique em **Salvar**.
+
+Também é possível fornecer a chave pela variável de ambiente:
 
 ```powershell
 $env:MISTRAL_API_KEY = "sua-chave"
 cargo run --release
 ```
 
-## Build do executável
+As configurações são organizadas nas abas **Conta**, **Modelo**, **Geração**, **Aparência** e **Sobre**. O botão **Testar conexão** está na aba Conta.
+
+## Gerar o pacote
 
 ```powershell
 .\scripts\package.ps1
 ```
 
-O script roda `cargo build --release` e gera `dist\neochat-desktop-mistral.exe` junto com o README. Basta copiar a pasta `dist` para outro PC.
+O script compila em modo release e gera `dist\NeoChat.exe`, uma cópia com o nome `dist\neochat-desktop-mistral.exe` e `dist\README.md`. A pasta pode ser copiada para outro computador Windows compatível; Rust e as ferramentas de compilação não são necessários para executar o pacote.
 
 ## Versão de terminal
 
@@ -49,39 +51,40 @@ $env:MISTRAL_API_KEY = "sua-chave"
 cargo run --release --bin neochat-cli
 ```
 
-Comandos: `/ajuda`, `/limpar`, `/modelo`, `/sair`. Se a variável não estiver definida, a CLI usa a chave salva pelo app.
+A CLI também usa a chave salva pelo aplicativo se a variável não estiver definida. O modelo pode ser definido com `MISTRAL_MODEL`. Os comandos disponíveis são `/ajuda`, `/limpar`, `/modelo` e `/sair`.
+
+## Atalhos
+
+| Atalho | Ação |
+| --- | --- |
+| `Enter` | Enviar mensagem |
+| `Shift+Enter` | Inserir quebra de linha |
+| `Esc` | Interromper geração ou fechar janela |
+| `Ctrl+N` | Nova conversa |
+| `Ctrl+,` | Abrir configurações |
+| `Ctrl+B` | Mostrar ou ocultar a barra lateral |
 
 ## Dados e privacidade
 
-Tudo fica em `%APPDATA%\NeoChat`:
+O aplicativo armazena dados em `%APPDATA%\NeoChat`:
 
 | Arquivo | Conteúdo |
 | --- | --- |
-| `config.json` | modelo, tema e tamanho da janela |
-| `conversations.json` | conversas e mensagens |
-| `secret.dat` | chave de API cifrada com DPAPI (usuário atual) |
+| `config.json` | Modelo, tema, parâmetros de geração e preferências |
+| `conversations.json` | Conversas, mensagens e métricas |
+| `secret.dat` | Chave de API criptografada com DPAPI para o usuário atual do Windows |
 
-As mensagens só saem do computador quando você envia algo para a API da Mistral.
+As mensagens enviadas são transmitidas à API da Mistral. O login e o carregamento de modelos também se comunicam com serviços da Mistral.
 
-## Estrutura
+## Estrutura e verificação
 
-```
-src/
-  main.rs             inicialização da janela
-  bin/neochat-cli.rs  versão de terminal
-  app/                interface (sidebar, chat, composer, settings)
-  mistral.rs          cliente HTTP e streaming da API
-  secrets.rs          DPAPI para a chave
-  storage.rs          persistência em JSON
-  theme.rs            fontes, cores e temas
-assets/               ícone e manifesto
-build.rs              compila o ícone (.rc) no executável
-scripts/              geração de ícone e empacotamento
-```
-
-## Testes e verificação
+A interface fica em `src/app/`; o cliente da API em `src/mistral.rs`; a persistência em `src/storage.rs` e `src/secrets.rs`; e a CLI em `src/bin/neochat-cli.rs`.
 
 ```powershell
 cargo test --all-targets
 cargo clippy --all-targets -- -D warnings
 ```
+
+## Desenvolvimento
+
+Desenvolvido por Giseldo.
