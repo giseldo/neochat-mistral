@@ -36,226 +36,243 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
-        .vscroll(true)
         .default_width(490.0)
+        .default_height(max_height)
         .max_width(max_width)
         .max_height(max_height)
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
-            ui.label(RichText::new("Chave da API Mistral").strong());
-            ui.add(
-                TextEdit::singleline(&mut app.settings_key)
-                    .password(true)
-                    .desired_width(f32::INFINITY)
-                    .hint_text("sua chave da API"),
-            );
-            ui.add_space(2.0);
-            ui.hyperlink_to(
-                "Obter uma chave no console da Mistral",
-                "https://console.mistral.ai/api-keys",
-            );
-            ui.add_space(10.0);
-            ui.separator();
-            ui.add_space(6.0);
+            egui::ScrollArea::vertical()
+                .id_salt("settings_content")
+                .max_height((max_height - 150.0).max(40.0))
+                .show(ui, |ui| {
+                    ui.label(RichText::new("Chave da API Mistral").strong());
+                    ui.add(
+                        TextEdit::singleline(&mut app.settings_key)
+                            .password(true)
+                            .desired_width(f32::INFINITY)
+                            .hint_text("sua chave da API"),
+                    );
+                    ui.add_space(2.0);
+                    ui.hyperlink_to(
+                        "Obter uma chave no console da Mistral",
+                        "https://console.mistral.ai/api-keys",
+                    );
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(6.0);
 
-            ui.label(RichText::new("Conta Mistral").strong());
-            ui.horizontal(|ui| {
-                let label = if login_pending {
-                    "Aguardando o login no navegador..."
-                } else {
-                    "Entrar com a conta Mistral"
-                };
-                if ui
-                    .add_enabled(!login_pending, Button::new(label))
-                    .clicked()
-                {
-                    login = true;
-                }
+                    ui.label(RichText::new("Conta Mistral").strong());
+                    ui.horizontal(|ui| {
+                        let label = if login_pending {
+                            "Aguardando o login no navegador..."
+                        } else {
+                            "Entrar com a conta Mistral"
+                        };
+                        if ui
+                            .add_enabled(!login_pending, Button::new(label))
+                            .clicked()
+                        {
+                            login = true;
+                        }
 
-                if ui
-                    .add_enabled(!login_pending && is_logged_in, Button::new("Sair da conta"))
-                    .on_hover_text("Desconectar da conta Mistral e remover a chave salva")
-                    .clicked()
-                {
-                    logout = true;
-                }
-            });
-            if let Some((ok, message)) = &login_status {
-                let color = if *ok {
-                    Color32::from_rgb(0x3F, 0xB9, 0x50)
-                } else {
-                    ui.visuals().error_fg_color
-                };
-                ui.label(RichText::new(message).small().color(color));
-            } else if is_logged_in {
-                ui.label(
-                    RichText::new("Conectado à Mistral")
+                        if ui
+                            .add_enabled(!login_pending && is_logged_in, Button::new("Sair da conta"))
+                            .on_hover_text("Desconectar da conta Mistral e remover a chave salva")
+                            .clicked()
+                        {
+                            logout = true;
+                        }
+                    });
+                    if let Some((ok, message)) = &login_status {
+                        let color = if *ok {
+                            Color32::from_rgb(0x3F, 0xB9, 0x50)
+                        } else {
+                            ui.visuals().error_fg_color
+                        };
+                        ui.label(RichText::new(message).small().color(color));
+                    } else if is_logged_in {
+                        ui.label(
+                            RichText::new("Conectado à Mistral")
+                                .small()
+                                .color(Color32::from_rgb(0x3F, 0xB9, 0x50)),
+                        );
+                    }
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(6.0);
+
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("Modelo").strong());
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let fetch_label = if models_pending {
+                                "Carregando..."
+                            } else {
+                                "Carregar todos os modelos"
+                            };
+                            if ui
+                                .add_enabled(
+                                    !models_pending,
+                                    Button::new(RichText::new(fetch_label).small()),
+                                )
+                                .on_hover_text(
+                                    "Buscar a lista completa de modelos disponíveis na API da Mistral",
+                                )
+                                .clicked()
+                            {
+                                fetch_models = true;
+                            }
+                        });
+                    });
+                    let prev_model = app.settings_model.clone();
+                    let combo_width = (ui.available_width() - 8.0).clamp(200.0, 455.0);
+                    ComboBox::from_id_salt("settings_model")
+                        .width(combo_width)
+                        .height(360.0)
+                        .selected_text(app.settings_model.clone())
+                        .show_ui(ui, |ui| {
+                            ui.spacing_mut().item_spacing.y = 2.0;
+                            ui.spacing_mut().interact_size.y = 24.0;
+                            for model in &models {
+                                ui.selectable_value(&mut app.settings_model, model.clone(), model);
+                            }
+                        });
+                    if app.settings_model != prev_model {
+                        app.store.config.model = app.settings_model.clone();
+                        app.store.save();
+                    }
+                    if let Some((ok, message)) = &models_status {
+                        let color = if *ok {
+                            Color32::from_rgb(0x3F, 0xB9, 0x50)
+                        } else {
+                            ui.visuals().error_fg_color
+                        };
+                        ui.label(RichText::new(message).small().color(color));
+                    }
+
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(6.0);
+
+                    let has_custom_params = (app.settings_temperature - DEFAULT_TEMPERATURE).abs() > 0.005
+                        || !app.settings_max_tokens.trim().is_empty()
+                        || !app.settings_prompt_caching;
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("Parâmetros de geração").strong());
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui
+                                .add_enabled(
+                                    has_custom_params,
+                                    Button::new(RichText::new("Restaurar padrões").small()),
+                                )
+                                .on_hover_text("Voltar para temperatura 0.70, limite automático e cache ativado")
+                                .clicked()
+                            {
+                                app.settings_temperature = DEFAULT_TEMPERATURE;
+                                app.settings_max_tokens.clear();
+                                app.settings_prompt_caching = true;
+                            }
+                        });
+                    });
+
+                    ui.add_space(4.0);
+                    ui.horizontal(|ui| {
+                        ui.label("Temperatura:");
+                        ui.add(
+                            Slider::new(&mut app.settings_temperature, 0.0..=1.5)
+                                .step_by(0.05)
+                                .fixed_decimals(2),
+                        );
+                    });
+                    ui.label(
+                        RichText::new(
+                            "0.00 = determinístico/código · 0.70 = equilibrado · >1.00 = mais criativo",
+                        )
                         .small()
-                        .color(Color32::from_rgb(0x3F, 0xB9, 0x50)),
-                );
-            }
-            ui.add_space(10.0);
-            ui.separator();
-            ui.add_space(6.0);
+                        .color(ui.visuals().weak_text_color()),
+                    );
 
-            ui.horizontal(|ui| {
-                ui.label(RichText::new("Modelo").strong());
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let fetch_label = if models_pending {
-                        "Carregando..."
-                    } else {
-                        "Carregar todos os modelos"
-                    };
-                    if ui
-                        .add_enabled(
-                            !models_pending,
-                            Button::new(RichText::new(fetch_label).small()),
+                    ui.add_space(6.0);
+                    ui.horizontal(|ui| {
+                        ui.label("Máximo de tokens:");
+                        ui.add(
+                            TextEdit::singleline(&mut app.settings_max_tokens)
+                                .desired_width(145.0)
+                                .hint_text("Automático"),
+                        );
+                        app.settings_max_tokens.retain(|c| c.is_ascii_digit());
+
+                        for preset in ["512", "2048", "4096"] {
+                            if ui
+                                .small_button(preset)
+                                .on_hover_text(format!("Limitar resposta a {preset} tokens"))
+                                .clicked()
+                            {
+                                app.settings_max_tokens = preset.to_string();
+                            }
+                        }
+                        if !app.settings_max_tokens.is_empty()
+                            && ui
+                                .small_button("Auto")
+                                .on_hover_text("Sem limite fixo (usa o padrão do modelo)")
+                                .clicked()
+                        {
+                            app.settings_max_tokens.clear();
+                        }
+                    });
+
+                    ui.add_space(6.0);
+                    ui.checkbox(
+                        &mut app.settings_prompt_caching,
+                        "Prompt Caching (reduz custos e latência)",
+                    )
+                    .on_hover_text(
+                        "Envia chave de sessão à Mistral para reaproveitar contexto e obter até 90% de desconto nos tokens de entrada em cache.",
+                    );
+                    ui.label(
+                        RichText::new(
+                            "Desconto de 90% em tokens já processados no histórico da conversa (blocos a partir de 64 tokens).",
                         )
-                        .on_hover_text(
-                            "Buscar a lista completa de modelos disponíveis na API da Mistral",
-                        )
-                        .clicked()
-                    {
-                        fetch_models = true;
-                    }
-                });
-            });
-            let prev_model = app.settings_model.clone();
-            let combo_width = (ui.available_width() - 8.0).clamp(200.0, 455.0);
-            ComboBox::from_id_salt("settings_model")
-                .width(combo_width)
-                .height(360.0)
-                .selected_text(app.settings_model.clone())
-                .show_ui(ui, |ui| {
-                    ui.spacing_mut().item_spacing.y = 2.0;
-                    ui.spacing_mut().interact_size.y = 24.0;
-                    for model in &models {
-                        ui.selectable_value(&mut app.settings_model, model.clone(), model);
-                    }
-                });
-            if app.settings_model != prev_model {
-                app.store.config.model = app.settings_model.clone();
-                app.store.save();
-            }
-            if let Some((ok, message)) = &models_status {
-                let color = if *ok {
-                    Color32::from_rgb(0x3F, 0xB9, 0x50)
-                } else {
-                    ui.visuals().error_fg_color
-                };
-                ui.label(RichText::new(message).small().color(color));
-            }
+                        .small()
+                        .color(ui.visuals().weak_text_color()),
+                    );
 
-            ui.add_space(10.0);
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.add_space(6.0);
+
+                    ui.label(RichText::new("Tema").strong());
+                    ui.horizontal(|ui| {
+                        for choice in [
+                            ThemeChoice::Sistema,
+                            ThemeChoice::Claro,
+                            ThemeChoice::Escuro,
+                        ] {
+                            ui.radio_value(&mut app.settings_theme, choice, choice.label());
+                        }
+                    });
+
+                    ui.add_space(6.0);
+                    ui.label(
+                        RichText::new("A chave fica salva criptografada com o Windows (DPAPI).")
+                            .small()
+                            .color(ui.visuals().weak_text_color()),
+                    );
+
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.label(
+                        RichText::new(format!(
+                            "NeoChat {} · dados em {}",
+                            env!("CARGO_PKG_VERSION"),
+                            crate::storage::data_dir().display()
+                        ))
+                        .small()
+                        .color(ui.visuals().weak_text_color()),
+                    );
+                });
+
             ui.separator();
-            ui.add_space(6.0);
-
-            let has_custom_params = (app.settings_temperature - DEFAULT_TEMPERATURE).abs() > 0.005
-                || !app.settings_max_tokens.trim().is_empty()
-                || !app.settings_prompt_caching;
-            ui.horizontal(|ui| {
-                ui.label(RichText::new("Parâmetros de geração").strong());
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui
-                        .add_enabled(
-                            has_custom_params,
-                            Button::new(RichText::new("Restaurar padrões").small()),
-                        )
-                        .on_hover_text("Voltar para temperatura 0.70, limite automático e cache ativado")
-                        .clicked()
-                    {
-                        app.settings_temperature = DEFAULT_TEMPERATURE;
-                        app.settings_max_tokens.clear();
-                        app.settings_prompt_caching = true;
-                    }
-                });
-            });
-
-            ui.add_space(4.0);
-            ui.horizontal(|ui| {
-                ui.label("Temperatura:");
-                ui.add(
-                    Slider::new(&mut app.settings_temperature, 0.0..=1.5)
-                        .step_by(0.05)
-                        .fixed_decimals(2),
-                );
-            });
-            ui.label(
-                RichText::new(
-                    "0.00 = determinístico/código · 0.70 = equilibrado · >1.00 = mais criativo",
-                )
-                .small()
-                .color(ui.visuals().weak_text_color()),
-            );
-
-            ui.add_space(6.0);
-            ui.horizontal(|ui| {
-                ui.label("Máximo de tokens:");
-                ui.add(
-                    TextEdit::singleline(&mut app.settings_max_tokens)
-                        .desired_width(145.0)
-                        .hint_text("Automático"),
-                );
-                app.settings_max_tokens.retain(|c| c.is_ascii_digit());
-
-                for preset in ["512", "2048", "4096"] {
-                    if ui
-                        .small_button(preset)
-                        .on_hover_text(format!("Limitar resposta a {preset} tokens"))
-                        .clicked()
-                    {
-                        app.settings_max_tokens = preset.to_string();
-                    }
-                }
-                if !app.settings_max_tokens.is_empty()
-                    && ui
-                        .small_button("Auto")
-                        .on_hover_text("Sem limite fixo (usa o padrão do modelo)")
-                        .clicked()
-                {
-                    app.settings_max_tokens.clear();
-                }
-            });
-
-            ui.add_space(6.0);
-            ui.checkbox(
-                &mut app.settings_prompt_caching,
-                "Prompt Caching (reduz custos e latência)",
-            )
-            .on_hover_text(
-                "Envia chave de sessão à Mistral para reaproveitar contexto e obter até 90% de desconto nos tokens de entrada em cache.",
-            );
-            ui.label(
-                RichText::new(
-                    "Desconto de 90% em tokens já processados no histórico da conversa (blocos a partir de 64 tokens).",
-                )
-                .small()
-                .color(ui.visuals().weak_text_color()),
-            );
-
-            ui.add_space(10.0);
-            ui.separator();
-            ui.add_space(6.0);
-
-            ui.label(RichText::new("Tema").strong());
-            ui.horizontal(|ui| {
-                for choice in [
-                    ThemeChoice::Sistema,
-                    ThemeChoice::Claro,
-                    ThemeChoice::Escuro,
-                ] {
-                    ui.radio_value(&mut app.settings_theme, choice, choice.label());
-                }
-            });
-
-            ui.add_space(6.0);
-            ui.label(
-                RichText::new("A chave fica salva criptografada com o Windows (DPAPI).")
-                    .small()
-                    .color(ui.visuals().weak_text_color()),
-            );
-
-            ui.add_space(14.0);
             ui.horizontal(|ui| {
                 if ui
                     .add(Button::new(RichText::new("Salvar").strong()))
@@ -285,18 +302,6 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                 };
                 ui.label(RichText::new(message).small().color(color));
             }
-
-            ui.add_space(10.0);
-            ui.separator();
-            ui.label(
-                RichText::new(format!(
-                    "NeoChat {} · dados em {}",
-                    env!("CARGO_PKG_VERSION"),
-                    crate::storage::data_dir().display()
-                ))
-                .small()
-                .color(ui.visuals().weak_text_color()),
-            );
         });
 
     app.settings_open = open && !close;
