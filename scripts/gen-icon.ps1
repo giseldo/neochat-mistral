@@ -24,8 +24,8 @@ function New-NeoChatBitmap([int]$size) {
     $shape.AddArc($rect.X, $rect.Bottom - $d, $d, $d, 90, 90)
     $shape.CloseFigure()
 
-    $start = [System.Drawing.Color]::FromArgb(255, 0, 96, 184)
-    $end = [System.Drawing.Color]::FromArgb(255, 0, 140, 220)
+    $start = [System.Drawing.Color]::FromArgb(255, 35, 25, 70)
+    $end = [System.Drawing.Color]::FromArgb(255, 105, 54, 174)
     $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush($rect, $start, $end, 55.0)
     $g.FillPath($brush, $shape)
     $brush.Dispose()
@@ -65,16 +65,22 @@ function New-NeoChatBitmap([int]$size) {
     $bubblePath.Dispose()
     $tail.Dispose()
 
-    $dotR = [single]($bubbleH * 0.10)
-    $dotY = [single]($bubbleY + $bubbleH * 0.5)
-    $gap = [single]($bubbleW * 0.20)
-    $centerX = [single]($bubbleX + $bubbleW * 0.5)
-    $dot = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 0, 110, 200))
-    foreach ($offset in -1, 0, 1) {
-        $cx = [single]($centerX + $offset * $gap)
-        $g.FillEllipse($dot, [single]($cx - $dotR), [single]($dotY - $dotR), [single]($dotR * 2), [single]($dotR * 2))
-    }
-    $dot.Dispose()
+    # Monograma N: traços amplos mantêm a leitura nos tamanhos menores.
+    $ink = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 71, 40, 129), [single]($bubbleH * 0.13))
+    $ink.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $ink.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $ink.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+    $left = [single]($bubbleX + $bubbleW * 0.32)
+    $right = [single]($bubbleX + $bubbleW * 0.68)
+    $top = [single]($bubbleY + $bubbleH * 0.28)
+    $bottom = [single]($bubbleY + $bubbleH * 0.72)
+    $g.DrawLines($ink, [System.Drawing.PointF[]]@(
+        (New-Object System.Drawing.PointF($left, $bottom)),
+        (New-Object System.Drawing.PointF($left, $top)),
+        (New-Object System.Drawing.PointF($right, $bottom)),
+        (New-Object System.Drawing.PointF($right, $top))
+    ))
+    $ink.Dispose()
 
     $shape.Dispose()
     $g.Dispose()

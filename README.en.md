@@ -1,4 +1,4 @@
-# NeoChat
+# neochat-desktop-mistral
 
 [Versão em Português](README.md)
 
@@ -65,7 +65,7 @@ To package a standalone release executable:
 .\scripts\package.ps1
 ```
 
-This compiles the release binary and packages `dist\NeoChat.exe` along with `README.md`. The portable `dist` folder can be copied and run on any compatible Windows PC without requiring Rust or build tools installed.
+This compiles the release binary and packages `dist\neochat-desktop-mistral.exe` along with `README.md`. The portable `dist` folder can be copied and run on any compatible Windows PC without requiring Rust or build tools installed.
 
 ---
 

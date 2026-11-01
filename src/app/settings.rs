@@ -263,7 +263,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     ui.separator();
                     ui.label(
                         RichText::new(format!(
-                            "NeoChat {} · dados em {}",
+                            "neochat-desktop-mistral {} · dados em {}",
                             env!("CARGO_PKG_VERSION"),
                             crate::storage::data_dir().display()
                         ))

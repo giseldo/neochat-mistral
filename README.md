@@ -1,4 +1,4 @@
-# NeoChat
+# neochat-desktop-mistral
 
 [Read in English](README.en.md)
 
@@ -40,7 +40,7 @@ cargo run --release
 .\scripts\package.ps1
 ```
 
-O script roda `cargo build --release` e gera `dist\NeoChat.exe` junto com o README. Basta copiar a pasta `dist` para outro PC.
+O script roda `cargo build --release` e gera `dist\neochat-desktop-mistral.exe` junto com o README. Basta copiar a pasta `dist` para outro PC.
 
 ## Versão de terminal
 
