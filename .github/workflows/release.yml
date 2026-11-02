@@ -42,6 +42,7 @@ jobs:
           New-Item -ItemType Directory -Path package -Force | Out-Null
           Copy-Item target/release/neochat.exe package/NeoChat.exe
           Copy-Item README.md package/README.md
+          Copy-Item LICENSE package/LICENSE
           Compress-Archive -Path package/* -DestinationPath NeoChat-windows-x86_64.zip
       - name: Upload binary to release
         env:
@@ -55,5 +56,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$env:RELEASE_TAG" NeoChat-windows-x86_64.zip --clobber
+        run: gh release upload "$env:RELEASE_TAG" NeoChat-windows-x86_64.zip LICENSE --clobber
         shell: pwsh

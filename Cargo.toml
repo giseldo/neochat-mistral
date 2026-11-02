@@ -3,6 +3,7 @@ name = "neochat"
 version = "0.2.4"
 edition = "2021"
 description = "Chatbot de desktop para Windows que conversa com um LLM da Mistral"
+license = "MIT"
 default-run = "neochat"
 build = "build.rs"
 

@@ -48,7 +48,7 @@ As configurações são organizadas nas abas **Conta**, **Modelo**, **Geração*
 .\scripts\package.ps1
 ```
 
-O script compila em modo release e gera `dist\NeoChat.exe`, uma cópia com o nome `dist\NeoChat Mistral.exe` e `dist\README.md`. A pasta pode ser copiada para outro computador Windows compatível; Rust e as ferramentas de compilação não são necessários para executar o pacote.
+O script compila em modo release e gera `dist\NeoChat.exe`, uma cópia com o nome `dist\NeoChat Mistral.exe`, `dist\README.md` e `dist\LICENSE`. A pasta pode ser copiada para outro computador Windows compatível; Rust e as ferramentas de compilação não são necessários para executar o pacote.
 
 Ao publicar uma release no GitHub, o GitHub Actions compila e anexa automaticamente `NeoChat-windows-x86_64.exe` e `NeoChat-linux-x86_64`. No Linux, dê permissão de execução com `chmod +x NeoChat-linux-x86_64`. O binário Linux depende das bibliotecas gráficas do sistema; a chave de API salva em disco não é criptografada nessa plataforma.
 
@@ -96,3 +96,7 @@ cargo clippy --all-targets -- -D warnings
 ## Desenvolvimento
 
 Desenvolvido por Giseldo.
+
+## Licença
+
+Distribuído sob a [licença MIT](LICENSE).

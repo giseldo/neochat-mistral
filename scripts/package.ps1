@@ -28,6 +28,7 @@ try {
     Copy-Item -LiteralPath $exe -Destination (Join-Path $dist "NeoChat.exe") -Force
     Copy-Item -LiteralPath $exe -Destination (Join-Path $dist "NeoChat Mistral.exe") -Force
     Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination (Join-Path $dist "README.md") -Force
+    Copy-Item -LiteralPath (Join-Path $root "LICENSE") -Destination (Join-Path $dist "LICENSE") -Force
 
     $size = [math]::Round((Get-Item -LiteralPath (Join-Path $dist "NeoChat.exe")).Length / 1MB, 1)
     Write-Host "Pacote gerado em $dist"

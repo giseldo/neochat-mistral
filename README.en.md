@@ -48,7 +48,7 @@ Settings are organized into Account, Model, Generation, Appearance and About tab
 .\scripts\package.ps1
 ```
 
-The script builds the release and creates `dist\NeoChat.exe`, a copy named `dist\NeoChat Mistral.exe`, and `dist\README.md`. The folder can be copied to another compatible Windows computer; Rust and build tools are not needed to run the package.
+The script builds the release and creates `dist\NeoChat.exe`, a copy named `dist\NeoChat Mistral.exe`, `dist\README.md`, and `dist\LICENSE`. The folder can be copied to another compatible Windows computer; Rust and build tools are not needed to run the package.
 
 ## Terminal client
 
@@ -94,3 +94,7 @@ cargo clippy --all-targets -- -D warnings
 ## Development
 
 Developed by Giseldo.
+
+## License
+
+Distributed under the [MIT License](LICENSE).
