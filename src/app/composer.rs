@@ -50,7 +50,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                         .wrap(),
                                     );
                                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                        if ui.small_button("Ã—").clicked() {
+                                        if ui.small_button("×").clicked() {
                                             app.error = None;
                                         }
                                     });
@@ -62,7 +62,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                             ui.add(Label::new(
                                 RichText::new(status).small().color(colors.muted),
                             ));
-                            if ui.small_button("Ã—").clicked() {
+                            if ui.small_button("×").clicked() {
                                 app.status = None;
                             }
                         });
@@ -86,8 +86,15 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                             ui.horizontal(|ui| {
                                 let btn_size = 32.0;
                                 let spacing = ui.spacing().item_spacing.x;
-                                let edit_width =
-                                    (ui.available_width() - btn_size - spacing).max(140.0);
+                                let (plus, plus_response) = ui.allocate_exact_size(egui::vec2(20.0, 32.0), Sense::hover());
+                                let center = plus.center();
+                                let stroke = Stroke::new(1.4, colors.muted);
+                                ui.painter().line_segment([center + egui::vec2(-6.0, 0.0), center + egui::vec2(6.0, 0.0)], stroke);
+                                ui.painter().line_segment([center + egui::vec2(0.0, -6.0), center + egui::vec2(0.0, 6.0)], stroke);
+                                plus_response.on_hover_text("Anexos indispon\u{00ed}veis");
+                                let show_model = ui.available_width() >= 300.0;
+                                let model_width = if show_model { 92.0 + spacing } else { 0.0 };
+                                let edit_width = (ui.available_width() - btn_size - spacing - model_width).max(60.0);
 
                                 let edit = ui.add_sized(
                                     [edit_width, (line_count as f32 * 21.0).max(26.0)],
@@ -111,6 +118,16 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 if enter {
                                     while app.input.ends_with('\n') {
                                         app.input.pop();
+                                    }
+                                }
+
+                                if show_model {
+                                    let model_button = egui::Button::new(RichText::new("Modelo  \u{2304}").size(13.0).color(colors.muted))
+                                        .fill(egui::Color32::TRANSPARENT)
+                                        .stroke(Stroke::NONE)
+                                        .min_size(egui::vec2(92.0, 32.0));
+                                    if ui.add(model_button).on_hover_text(format!("Modelo atual: {}. Abrir configura\u{00e7}\u{00f5}es", app.store.config.model)).clicked() {
+                                        app.open_settings();
                                     }
                                 }
 
