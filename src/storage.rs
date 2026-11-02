@@ -245,6 +245,8 @@ pub struct Conversation {
     #[serde(default)]
     pub updated_at: i64,
     #[serde(default)]
+    pub favorite: bool,
+    #[serde(default)]
     pub messages: Vec<StoredMessage>,
 }
 
@@ -256,6 +258,7 @@ impl Conversation {
             title: "Nova conversa".to_string(),
             created_at: created,
             updated_at: created,
+            favorite: false,
             messages: Vec::new(),
         }
     }
@@ -535,6 +538,16 @@ mod tests {
         assert_eq!(back.max_tokens, Some(2048));
         assert!(back.prompt_caching);
         assert!(back.think);
+    }
+
+    #[test]
+    fn favorite_roundtrip_and_legacy_default() {
+        let mut conversation = Conversation::new("c1");
+        let legacy = serde_json::json!({"id": "old"});
+        assert!(!serde_json::from_value::<Conversation>(legacy).unwrap().favorite);
+        conversation.favorite = true;
+        let restored: Conversation = serde_json::from_str(&serde_json::to_string(&conversation).unwrap()).unwrap();
+        assert!(restored.favorite);
     }
 
     #[test]

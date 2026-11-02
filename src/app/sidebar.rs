@@ -9,6 +9,7 @@ enum RowAction {
     Select(String),
     Rename(String),
     Delete(String),
+    Favorite(String),
 }
 
 /// Ícone do aplicativo (`assets/neochat.png`), decodificado uma vez e guardado na memória do egui.
@@ -174,13 +175,13 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                     ui.add_space(8.0);
                     let search = search.trim().to_lowercase();
                     let active = app.store.conversations.active.clone();
-                    let mut rows: Vec<(String, String, i64)> = app
+                    let mut rows: Vec<(String, String, i64, bool)> = app
                         .store
                         .conversations
                         .items
                         .iter()
                         .filter(|c| {
-                            (!c.messages.is_empty() || app.store.conversations.items.len() == 1)
+                            (!c.messages.is_empty() || c.favorite || app.store.conversations.items.len() == 1)
                                 && (search.is_empty() || c.title.to_lowercase().contains(&search))
                         })
                         .map(|conversation| {
@@ -192,6 +193,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                                     conversation.title.clone()
                                 },
                                 conversation.updated_at,
+                                conversation.favorite,
                             )
                         })
                         .collect();
@@ -211,8 +213,8 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                                 );
                             }
                             let mut current_group = "";
-                            for (id, title, updated) in &rows {
-                                let group = date_group(*updated);
+                            for (id, title, updated, favorite) in rows.iter().filter(|row| row.3).chain(rows.iter().filter(|row| !row.3)) {
+                                let group = if *favorite { "Favoritos" } else { date_group(*updated) };
                                 if group != current_group {
                                     if !current_group.is_empty() {
                                         ui.add_space(10.0);
@@ -231,7 +233,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                                 }
 
                                 let selected = active.as_deref() == Some(id.as_str());
-                                row(ui, &colors, id, title, selected, &mut action);
+                                row(ui, &colors, id, title, selected, *favorite, &mut action);
                                 ui.add_space(1.0);
                             }
                         });
@@ -251,6 +253,12 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                             app.rename_focus = true;
                         }
                         Some(RowAction::Delete(id)) => app.delete = Some(id),
+                        Some(RowAction::Favorite(id)) => {
+                            if let Some(conversation) = app.store.conversations.items.iter_mut().find(|c| c.id == id) {
+                                conversation.favorite = !conversation.favorite;
+                            }
+                            app.store.save();
+                        }
                         None => {}
                     }
                 });
@@ -270,6 +278,7 @@ fn row(
     id: &str,
     title: &str,
     selected: bool,
+    favorite: bool,
     action: &mut Option<RowAction>,
 ) {
     let height = 32.0;
@@ -306,7 +315,7 @@ fn row(
 
         let mut clicked_inline_button = false;
 
-        let right_reserve = if show_actions { 44.0 } else { 4.0 };
+        let right_reserve = if show_actions { 66.0 } else { 4.0 };
         let title_width = (child.available_width() - right_reserve).max(40.0);
         child.allocate_ui_with_layout(
             egui::vec2(title_width, 22.0),
@@ -320,6 +329,30 @@ fn row(
         if show_actions {
             child.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
+
+                // Estrela para adicionar ou remover dos favoritos.
+                let (star_rect, star_resp) = ui.allocate_exact_size(egui::vec2(20.0, 20.0), Sense::click());
+                let star_color = if favorite || star_resp.hovered() { colors.assistant_text } else { colors.muted };
+                let center = star_rect.center();
+                let points: Vec<egui::Pos2> = (0..10).map(|i| {
+                    let angle = -std::f32::consts::FRAC_PI_2 + i as f32 * std::f32::consts::PI / 5.0;
+                    let radius = if i % 2 == 0 { 6.0 } else { 2.7 };
+                    center + egui::vec2(angle.cos() * radius, angle.sin() * radius)
+                }).collect();
+                if favorite {
+                    for i in 0..points.len() {
+                        ui.painter().add(egui::Shape::convex_polygon(
+                            vec![center, points[i], points[(i + 1) % points.len()]],
+                            star_color, Stroke::NONE,
+                        ));
+                    }
+                }
+                ui.painter().add(egui::Shape::closed_line(points, Stroke::new(1.2, star_color)));
+                let hint = if favorite { "Remover dos favoritos" } else { "Adicionar aos favoritos" };
+                if star_resp.on_hover_text(super::i18n::tr(hint)).clicked() {
+                    *action = Some(RowAction::Favorite(id.to_string()));
+                    clicked_inline_button = true;
+                }
 
                 // Botão Excluir (× vetorial)
                 let (del_rect, del_resp) =
@@ -375,6 +408,11 @@ fn row(
     }
 
     response.context_menu(|ui| {
+        let favorite_label = if favorite { "Remover dos favoritos" } else { "Adicionar aos favoritos" };
+        if ui.button(super::i18n::tr(favorite_label)).clicked() {
+            *action = Some(RowAction::Favorite(id.to_string()));
+            ui.close();
+        }
         if ui.button(super::i18n::tr("Renomear")).clicked() {
             *action = Some(RowAction::Rename(id.to_string()));
             ui.close();
