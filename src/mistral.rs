@@ -54,12 +54,14 @@ impl Serialize for Message {
 /// Devolve `None` quando o modelo não suporta o parâmetro.
 pub fn reasoning_effort(model: &str, think: bool) -> Option<&'static str> {
     let m = model.to_ascii_lowercase();
-    if m.contains("glm") || m.contains("large") {
-        Some(if think { "high" } else { "low" })
-    } else if m.contains("small") || m.contains("medium") {
-        Some(if think { "high" } else { "none" })
-    } else {
-        None
+    match m.as_str() {
+        "mistral-large-4" | "mistral-large-4-0" | "zai-glm-5-3" => {
+            Some(if think { "high" } else { "low" })
+        }
+        "mistral-small-latest" | "mistral-small-2603" | "mistral-medium-3-5" => {
+            Some(if think { "high" } else { "none" })
+        }
+        _ => None,
     }
 }
 
@@ -447,7 +449,11 @@ mod tests {
     fn reasoning_effort_by_model() {
         assert_eq!(reasoning_effort("mistral-small-latest", true), Some("high"));
         assert_eq!(reasoning_effort("mistral-small-2603", false), Some("none"));
-        assert_eq!(reasoning_effort("mistral-large-latest", false), Some("low"));
+        assert_eq!(reasoning_effort("mistral-large-latest", false), None);
+        assert_eq!(reasoning_effort("mistral-large-latest", true), None);
+        assert_eq!(reasoning_effort("mistral-large-4-0", false), Some("low"));
+        assert_eq!(reasoning_effort("mistral-medium-3-5", true), Some("high"));
+        assert_eq!(reasoning_effort("mistral-medium-2505", true), None);
         assert_eq!(reasoning_effort("open-mistral-nemo", true), None);
     }
 
