@@ -10,7 +10,7 @@ build = "build.rs"
 anyhow = "1"
 base64 = "0.22"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
-eframe = "0.37.0"
+eframe = { version = "0.37.0", features = ["persistence"] }
 egui = "0.37.0"
 egui_commonmark = { version = "0.26", default-features = false }
 futures-util = "0.3"

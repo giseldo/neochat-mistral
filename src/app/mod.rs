@@ -63,7 +63,6 @@ pub struct NeoChat {
     applied_theme: Option<ThemeChoice>,
     applied_font_scale: Option<f32>,
     last_window_size: Option<[f32; 2]>,
-    centered: bool,
     pub(super) follow_output: bool,
     pub(super) jump_to_bottom: bool,
     pub(super) focus_composer: bool,
@@ -157,7 +156,6 @@ impl NeoChat {
             applied_theme: None,
             applied_font_scale: None,
             last_window_size: None,
-            centered: false,
             follow_output: true,
             jump_to_bottom: false,
             focus_composer: false,
@@ -829,31 +827,6 @@ impl NeoChat {
         self.last_window_size = Some([size.x, size.y]);
     }
 
-    fn center_window(&mut self, ctx: &Context) {
-        if self.centered {
-            return;
-        }
-
-        let (outer, monitor) = ctx.input(|i| {
-            let viewport = i.viewport();
-            (viewport.outer_rect, viewport.monitor_size)
-        });
-
-        let (Some(outer), Some(monitor)) = (outer, monitor) else {
-            return;
-        };
-
-        if outer.width() <= 0.0 || outer.height() <= 0.0 {
-            return;
-        }
-
-        let position = ((monitor - outer.size()) * 0.5).max(egui::Vec2::ZERO);
-        ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(egui::pos2(
-            position.x, position.y,
-        )));
-        self.centered = true;
-    }
-
     fn top_bar(&mut self, ui: &mut egui::Ui) {
         let colors = theme::chat_colors(ui.ctx().theme());
         let active_meta = self.store.conversations.active().and_then(|c| {
@@ -1007,7 +980,6 @@ impl NeoChat {
 impl eframe::App for NeoChat {
     fn logic(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         self.track_window_size(ctx);
-        self.center_window(ctx);
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
