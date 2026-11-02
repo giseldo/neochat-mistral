@@ -24,8 +24,8 @@ function New-NeoChatBitmap([int]$size) {
     $shape.AddArc($rect.X, $rect.Bottom - $d, $d, $d, 90, 90)
     $shape.CloseFigure()
 
-    $start = [System.Drawing.Color]::FromArgb(255, 35, 25, 70)
-    $end = [System.Drawing.Color]::FromArgb(255, 105, 54, 174)
+    $start = [System.Drawing.Color]::FromArgb(255, 150, 15, 25)
+    $end = [System.Drawing.Color]::FromArgb(255, 228, 45, 50)
     $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush($rect, $start, $end, 55.0)
     $g.FillPath($brush, $shape)
     $brush.Dispose()
@@ -65,20 +65,32 @@ function New-NeoChatBitmap([int]$size) {
     $bubblePath.Dispose()
     $tail.Dispose()
 
-    # Monograma N: traços amplos mantêm a leitura nos tamanhos menores.
-    $ink = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 71, 40, 129), [single]($bubbleH * 0.13))
+    # Monograma NM: traços amplos mantêm a leitura nos tamanhos menores.
+    $ink = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 170, 20, 30), [single]($bubbleH * 0.11))
     $ink.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
     $ink.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
     $ink.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-    $left = [single]($bubbleX + $bubbleW * 0.32)
-    $right = [single]($bubbleX + $bubbleW * 0.68)
+    $x0 = [single]($bubbleX + $bubbleW * 0.14)
+    $nL = $x0
+    $nR = [single]($x0 + $bubbleW * 0.26)
+    $mL = [single]($x0 + $bubbleW * 0.38)
+    $mR = [single]($x0 + $bubbleW * 0.72)
+    $mM = [single](($mL + $mR) / 2)
     $top = [single]($bubbleY + $bubbleH * 0.28)
     $bottom = [single]($bubbleY + $bubbleH * 0.72)
+    $mid = [single]($top + ($bottom - $top) * 0.55)
     $g.DrawLines($ink, [System.Drawing.PointF[]]@(
-        (New-Object System.Drawing.PointF($left, $bottom)),
-        (New-Object System.Drawing.PointF($left, $top)),
-        (New-Object System.Drawing.PointF($right, $bottom)),
-        (New-Object System.Drawing.PointF($right, $top))
+        (New-Object System.Drawing.PointF($nL, $bottom)),
+        (New-Object System.Drawing.PointF($nL, $top)),
+        (New-Object System.Drawing.PointF($nR, $bottom)),
+        (New-Object System.Drawing.PointF($nR, $top))
+    ))
+    $g.DrawLines($ink, [System.Drawing.PointF[]]@(
+        (New-Object System.Drawing.PointF($mL, $bottom)),
+        (New-Object System.Drawing.PointF($mL, $top)),
+        (New-Object System.Drawing.PointF($mM, $mid)),
+        (New-Object System.Drawing.PointF($mR, $top)),
+        (New-Object System.Drawing.PointF($mR, $bottom))
     ))
     $ink.Dispose()
 
