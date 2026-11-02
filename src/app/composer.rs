@@ -97,10 +97,11 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 let edit_width = (ui.available_width() - btn_size - spacing - model_width).max(60.0);
 
                                 let edit = ui.add_sized(
-                                    [edit_width, (line_count as f32 * 21.0).max(26.0)],
+                                    [edit_width, (line_count as f32 * 21.0).max(btn_size)],
                                     TextEdit::multiline(&mut app.input)
                                         .id(composer_id)
                                         .frame(Frame::NONE)
+                                        .align(egui::Align2::LEFT_CENTER)
                                         .hint_text("Digite uma mensagem...")
                                         .desired_rows(line_count)
                                         .desired_width(f32::INFINITY),
