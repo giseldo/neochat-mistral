@@ -13,16 +13,12 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
 
     Panel::bottom("composer")
         .resizable(false)
-        .frame(
-            Frame::new()
-                .fill(colors.background)
-                .inner_margin(Margin {
-                    left: 0,
-                    right: 0,
-                    top: 6,
-                    bottom: 20,
-                }),
-        )
+        .frame(Frame::new().fill(colors.background).inner_margin(Margin {
+            left: 0,
+            right: 0,
+            top: 6,
+            bottom: 20,
+        }))
         .show(ui, |ui| {
             let avail_w = ui.available_width();
             let col_w = (avail_w - 48.0).clamp(260.0, MAX_CHAT_WIDTH);
@@ -84,7 +80,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
 
                     let card = Frame::new()
                         .fill(colors.surface)
-                        .corner_radius(CornerRadius::same(18))
+                        .corner_radius(CornerRadius::same(12))
                         .inner_margin(Margin::symmetric(16, 10))
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {
@@ -98,7 +94,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                     TextEdit::multiline(&mut app.input)
                                         .id(composer_id)
                                         .frame(Frame::NONE)
-                                        .hint_text("Envie uma mensagem...")
+                                        .hint_text("Digite uma mensagem...")
                                         .desired_rows(line_count)
                                         .desired_width(f32::INFINITY),
                                 );
@@ -131,10 +127,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                     ui.allocate_exact_size(egui::vec2(btn_size, btn_size), sense);
 
                                 let (bg_fill, fg_color) = if busy {
-                                    (
-                                        colors.assistant_text,
-                                        colors.surface,
-                                    )
+                                    (colors.assistant_text, colors.surface)
                                 } else if has_text {
                                     let bg = if btn_resp.hovered() {
                                         colors.assistant_text.gamma_multiply(0.85)
@@ -149,16 +142,14 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                     )
                                 };
 
-                                ui.painter().rect_filled(
-                                    btn_rect,
-                                    CornerRadius::same(16),
-                                    bg_fill,
-                                );
+                                ui.painter()
+                                    .rect_filled(btn_rect, CornerRadius::same(16), bg_fill);
 
                                 let c = btn_rect.center();
                                 if busy {
                                     let sq = egui::Rect::from_center_size(c, egui::vec2(8.5, 8.5));
-                                    ui.painter().rect_filled(sq, CornerRadius::same(2), fg_color);
+                                    ui.painter()
+                                        .rect_filled(sq, CornerRadius::same(2), fg_color);
                                 } else {
                                     let stroke = Stroke::new(1.7, fg_color);
                                     ui.painter().line_segment(
@@ -202,7 +193,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
 
                     ui.painter().rect_stroke(
                         card.response.rect,
-                        CornerRadius::same(18),
+                        CornerRadius::same(12),
                         border_stroke,
                         StrokeKind::Inside,
                     );

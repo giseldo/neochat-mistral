@@ -6,9 +6,9 @@ use egui::{
 };
 use std::collections::BTreeMap;
 
-pub const ACCENT_DARK: Color32 = Color32::from_rgb(0x63, 0x84, 0xFF);
-pub const ACCENT_LIGHT: Color32 = Color32::from_rgb(0x2B, 0x4C, 0x7E);
-pub const MAX_CHAT_WIDTH: f32 = 740.0;
+pub const ACCENT_DARK: Color32 = Color32::from_rgb(0xFF, 0x70, 0x28);
+pub const ACCENT_LIGHT: Color32 = Color32::from_rgb(0xE8, 0x5B, 0x1B);
+pub const MAX_CHAT_WIDTH: f32 = 768.0;
 
 pub fn preference(choice: ThemeChoice) -> ThemePreference {
     match choice {
@@ -133,7 +133,7 @@ fn visuals_dark() -> egui::Visuals {
     v.hyperlink_color = ACCENT_DARK;
     v.error_fg_color = Color32::from_rgb(0xF8, 0x71, 0x71);
     v.warn_fg_color = Color32::from_rgb(0xFB, 0xBF, 0x24);
-    v.selection.bg_fill = Color32::from_rgb(0x2B, 0x3A, 0x67);
+    v.selection.bg_fill = Color32::from_rgb(0x5C, 0x38, 0x29);
     v.selection.stroke = Stroke::new(1.0, Color32::WHITE);
     v.window_corner_radius = CornerRadius::same(12);
     v.menu_corner_radius = CornerRadius::same(10);
@@ -156,20 +156,20 @@ fn visuals_dark() -> egui::Visuals {
 fn visuals_light() -> egui::Visuals {
     let mut v = egui::Visuals::light();
     let text = Color32::from_rgb(0x1A, 0x1A, 0x1E);
-    let muted = Color32::from_rgb(0x62, 0x62, 0x70);
-    let border = Color32::from_rgb(0xE8, 0xE8, 0xED);
+    let muted = Color32::from_rgb(0x8D, 0x8C, 0x85);
+    let border = Color32::from_rgb(0xE2, 0xE1, 0xDE);
 
-    v.panel_fill = Color32::from_rgb(0xFC, 0xFC, 0xFD);
+    v.panel_fill = Color32::from_rgb(0xFA, 0xFA, 0xF9);
     v.window_fill = Color32::from_rgb(0xFF, 0xFF, 0xFF);
     v.extreme_bg_color = Color32::from_rgb(0xFF, 0xFF, 0xFF);
-    v.faint_bg_color = Color32::from_rgb(0xF3, 0xF3, 0xF6);
+    v.faint_bg_color = Color32::from_rgb(0xF0, 0xEF, 0xED);
     v.code_bg_color = Color32::from_rgb(0xF4, 0xF4, 0xF7);
     v.override_text_color = Some(text);
     v.weak_text_color = Some(muted);
     v.hyperlink_color = ACCENT_LIGHT;
     v.error_fg_color = Color32::from_rgb(0xDC, 0x26, 0x26);
     v.warn_fg_color = Color32::from_rgb(0xD9, 0x77, 0x06);
-    v.selection.bg_fill = Color32::from_rgb(0xD8, 0xE2, 0xF8);
+    v.selection.bg_fill = Color32::from_rgb(0xF8, 0xDD, 0xCA);
     v.selection.stroke = Stroke::new(1.0, text);
     v.window_corner_radius = CornerRadius::same(12);
     v.menu_corner_radius = CornerRadius::same(10);
@@ -177,9 +177,9 @@ fn visuals_light() -> egui::Visuals {
 
     widgets(
         &mut v.widgets,
-        Color32::from_rgb(0xF5, 0xF5, 0xF8),
-        Color32::from_rgb(0xEC, 0xEC, 0xF1),
-        Color32::from_rgb(0xE3, 0xE3, 0xEA),
+        Color32::from_rgb(0xF2, 0xF1, 0xEF),
+        Color32::from_rgb(0xE9, 0xE8, 0xE6),
+        Color32::from_rgb(0xE2, 0xE1, 0xDE),
         border,
         text,
     );
@@ -243,16 +243,16 @@ pub fn chat_colors(theme: Theme) -> ChatColors {
             accent: ACCENT_DARK,
         },
         Theme::Light => ChatColors {
-            background: Color32::from_rgb(0xFC, 0xFC, 0xFD),
-            sidebar_bg: Color32::from_rgb(0xF4, 0xF4, 0xF6),
+            background: Color32::from_rgb(0xFA, 0xFA, 0xF9),
+            sidebar_bg: Color32::from_rgb(0xF7, 0xF6, 0xF3),
             surface: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-            border: Color32::from_rgb(0xE6, 0xE6, 0xEC),
-            user_bubble: Color32::from_rgb(0xF1, 0xF1, 0xF4),
+            border: Color32::from_rgb(0xE2, 0xE1, 0xDE),
+            user_bubble: Color32::from_rgb(0xEF, 0xEF, 0xED),
             user_text: Color32::from_rgb(0x18, 0x18, 0x1C),
             assistant_bubble: Color32::from_rgb(0xFF, 0xFF, 0xFF),
             assistant_text: Color32::from_rgb(0x1A, 0x1A, 0x1E),
             assistant_border: Color32::from_rgb(0xEA, 0xEA, 0xF0),
-            muted: Color32::from_rgb(0x62, 0x62, 0x70),
+            muted: Color32::from_rgb(0x8D, 0x8C, 0x85),
             accent: ACCENT_LIGHT,
         },
     }

@@ -20,7 +20,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
 
     let panel_resp = Panel::left("sidebar")
         .resizable(true)
-        .default_size(270.0)
+        .default_size(260.0)
         .min_size(208.0)
         .max_size(340.0)
         .frame(
@@ -77,6 +77,26 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                         .inner_margin(Margin::same(0)),
                 )
                 .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        let (logo, _) =
+                            ui.allocate_exact_size(egui::vec2(24.0, 24.0), Sense::hover());
+                        ui.painter()
+                            .rect_filled(logo, CornerRadius::same(4), colors.accent);
+                        ui.painter().text(
+                            logo.center(),
+                            Align2::CENTER_CENTER,
+                            "N",
+                            egui::FontId::proportional(16.0),
+                            Color32::WHITE,
+                        );
+                        ui.add_space(2.0);
+                        ui.label(
+                            RichText::new("NeoChat")
+                                .size(16.0)
+                                .color(colors.assistant_text),
+                        );
+                    });
+                    ui.add_space(14.0);
                     let (btn_rect, btn_resp) = ui.allocate_exact_size(
                         egui::vec2(ui.available_width(), 34.0),
                         Sense::click(),
@@ -84,14 +104,14 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                     let btn_bg = if btn_resp.hovered() {
                         colors.border.gamma_multiply(0.45)
                     } else {
-                        colors.surface
+                        Color32::TRANSPARENT
                     };
                     ui.painter()
                         .rect_filled(btn_rect, CornerRadius::same(8), btn_bg);
                     ui.painter().rect_stroke(
                         btn_rect,
                         CornerRadius::same(8),
-                        Stroke::new(1.0, colors.border),
+                        Stroke::NONE,
                         egui::StrokeKind::Inside,
                     );
 
@@ -256,8 +276,8 @@ fn row(
             )
         } else {
             (
-                Color32::from_rgb(0xEB, 0xEB, 0xEF),
-                Color32::from_rgb(0xE4, 0xE4, 0xEA),
+                Color32::from_rgb(0xEE, 0xED, 0xEB),
+                Color32::from_rgb(0xE8, 0xE7, 0xE5),
             )
         };
 
@@ -288,10 +308,7 @@ fn row(
             egui::vec2(title_width, 22.0),
             Layout::left_to_right(Align::Center),
             |ui| {
-                let mut text = RichText::new(title).size(13.0).color(title_color);
-                if selected {
-                    text = text.strong();
-                }
+                let text = RichText::new(title).size(13.0).color(title_color);
                 ui.add(Label::new(text).truncate().selectable(false));
             },
         );
