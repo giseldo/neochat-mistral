@@ -6,7 +6,7 @@
 
 <img width="1914" height="1003" alt="image" src="https://github.com/user-attachments/assets/0fb6caf7-64da-4a82-9054-10bc9d5a96aa" />
 
-A Windows desktop client written in Rust for chatting with models available through the [Mistral](https://mistral.ai) API. It provides streaming responses, Markdown and local conversation history. The interface uses egui and eframe.
+A Windows desktop client written in Rust for chatting with [Mistral](https://mistral.ai) models. Sign in with your Mistral account in your browser or provide an API key. It provides streaming responses, Markdown and local conversation history. The interface uses egui and eframe.
 
 > **Independent project:** NeoChat has no affiliation or relationship with Mistral AI. It is not an official Mistral product.
 
@@ -31,7 +31,7 @@ A Windows desktop client written in Rust for chatting with models available thro
 cargo run --release
 ```
 
-Open **Configurações** (Settings) in the sidebar or press `Ctrl+,`. In the **Conta** (Account) tab, sign in to your Mistral account or enter a key from the [Mistral console](https://console.mistral.ai/api-keys). Click **Salvar** (Save) to apply edited settings. The application interface is in Portuguese.
+Open **Configurações** (Settings) in the sidebar or press `Ctrl+,`. In the **Conta** (Account) tab, click **Entrar com a conta Mistral** and complete sign-in with your Mistral account in your browser. Alternatively, enter a key from the [Mistral console](https://console.mistral.ai/api-keys). Browser sign-in also obtains an API key for the application to use in conversations. Click **Salvar** (Save) to apply edited settings. The application interface is in Portuguese.
 
 Alternatively, provide the key through an environment variable:
 
