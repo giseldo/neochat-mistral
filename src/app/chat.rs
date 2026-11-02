@@ -234,10 +234,6 @@ fn assistant_bubble(
                         ui.spacing_mut().item_spacing.x = 4.0;
 
                         if !busy {
-                            if is_last && ghost_action_button(ui, colors, false, ActionIcon::Regenerate, true)
-                                .on_hover_text("Gerar uma nova resposta").clicked() {
-                                *action = Some(ChatAction::Regenerate);
-                            }
                             if ghost_action_button(ui, colors, is_copied, ActionIcon::Copy { done: is_copied }, true)
                                 .on_hover_text(if is_copied { "Copiado" } else { "Copiar resposta" }).clicked() {
                                 *action = Some(ChatAction::Copy(index, message.content.clone()));
@@ -277,7 +273,6 @@ fn assistant_bubble(
 
 enum ActionIcon {
     Copy { done: bool },
-    Regenerate,
 }
 
 fn ghost_action_button(
@@ -334,14 +329,7 @@ fn ghost_action_button(
             ui.painter()
                 .rect_stroke(front, CornerRadius::same(1), stroke, StrokeKind::Inside);
         }
-        ActionIcon::Regenerate => {
-            let stroke = Stroke::new(1.3, fg);
-            ui.painter().circle_stroke(ic, 4.2, stroke);
-            ui.painter().line_segment(
-                [egui::pos2(ic.x + 2.5, ic.y - 4.2), egui::pos2(ic.x + 4.8, ic.y - 1.8)],
-                stroke,
-            );
-        }
+
     }
 
 
