@@ -91,7 +91,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                         );
                         ui.add_space(2.0);
                         ui.label(
-                            RichText::new("NeoChat")
+                            RichText::new("NeoChat Mistral")
                                 .size(16.0)
                                 .color(colors.assistant_text),
                         );
