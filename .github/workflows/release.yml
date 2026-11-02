@@ -1,47 +1,59 @@
-name: Release
+name: Build release binaries
 
 on:
-  push:
-    tags:
-      - 'v*'
   release:
     types: [published]
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-and-upload:
-    name: Build & Upload Windows Executable
-    runs-on: windows-latest
-
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: target/release/neochat
+            asset: NeoChat-linux-x86_64
+          - os: windows-latest
+            binary: target/release/neochat.exe
+            asset: NeoChat-windows-x86_64.exe
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
-
-      - name: Build release binary
-        run: cargo build --release
-
-      - name: Package artifacts
+      - uses: actions/checkout@v7
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxkbcommon-dev libwayland-dev libxrandr-dev libxi-dev libxcursor-dev libudev-dev
+      - name: Update Rust stable
+        run: rustup update stable && rustup default stable
+      - name: Build
+        run: cargo build --release --locked --bin neochat
+      - name: Prepare binary
+        shell: bash
+        run: cp '${{ matrix.binary }}' '${{ matrix.asset }}'
+      - name: Package Windows archive
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path dist -Force | Out-Null
-          Copy-Item target/release/neochat.exe -Destination dist/NeoChat.exe -Force
-          Copy-Item README.md -Destination dist/README.md -Force
-          $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "latest" }
-          Compress-Archive -Path dist/* -DestinationPath "dist/NeoChat-${tag}-windows-x64.zip" -Force
-
-      - name: Upload binaries to Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
-        with:
-          files: |
-            dist/NeoChat.exe
-            dist/*.zip
+          New-Item -ItemType Directory -Path package -Force | Out-Null
+          Copy-Item target/release/neochat.exe package/NeoChat.exe
+          Copy-Item README.md package/README.md
+          Compress-Archive -Path package/* -DestinationPath NeoChat-windows-x86_64.zip
+      - name: Upload binary to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          ASSET: ${{ matrix.asset }}
+        run: gh release upload "$env:RELEASE_TAG" "$env:ASSET" --clobber
+        shell: pwsh
+      - name: Upload Windows archive
+        if: runner.os == 'Windows'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$env:RELEASE_TAG" NeoChat-windows-x86_64.zip --clobber
+        shell: pwsh
