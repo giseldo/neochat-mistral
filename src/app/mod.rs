@@ -998,44 +998,6 @@ impl NeoChat {
                             }
                             ui.add_space(4.0);
                         }
-
-                        let models = self.model_list();
-                        let mut selected = self.store.config.model.clone();
-                        let mut fetch_from_combo = false;
-                        let models_pending = self.models_pending;
-                        egui::ComboBox::from_id_salt("model_combo")
-                            .width(220.0)
-                            .height(420.0)
-                            .selected_text(
-                                egui::RichText::new(selected.clone())
-                                    .size(12.5)
-                                    .color(colors.muted),
-                            )
-                            .show_ui(ui, |ui| {
-                                ui.spacing_mut().item_spacing.y = 2.0;
-                                ui.spacing_mut().interact_size.y = 24.0;
-                                for model in &models {
-                                    ui.selectable_value(&mut selected, model.clone(), model);
-                                }
-                                ui.separator();
-                                let label = if models_pending {
-                                    i18n::tr("Carregando modelos...")
-                                } else {
-                                    i18n::tr("Carregar todos os modelos")
-                                };
-                                if ui.add_enabled(!models_pending, egui::Button::new(label)).clicked() {
-                                    fetch_from_combo = true;
-                                }
-                            });
-                        if selected != self.store.config.model {
-                            self.store.config.model = selected.clone();
-                            self.settings_model = selected;
-                            self.store.save();
-                        }
-                        if fetch_from_combo {
-                            let ctx_clone = ui.ctx().clone();
-                            self.start_fetch_models(&ctx_clone);
-                        }
                     });
                 });
             });
