@@ -271,6 +271,20 @@ impl MistralClient {
             bail!("informe a chave da API da Mistral nas configuracoes");
         }
 
+        // Blocos `thinking` no histórico só são aceitos com raciocínio ativo.
+        let reasoning_on = matches!(self.reasoning_effort, Some(e) if e != "none");
+        let stripped: Vec<Message>;
+        let messages = if !reasoning_on && messages.iter().any(|m| m.thinking.is_some()) {
+            stripped = messages
+                .iter()
+                .cloned()
+                .map(|m| Message { thinking: None, ..m })
+                .collect();
+            &stripped[..]
+        } else {
+            messages
+        };
+
         let body = ChatRequest {
             model: &self.model,
             messages,
