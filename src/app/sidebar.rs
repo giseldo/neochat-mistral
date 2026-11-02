@@ -11,6 +11,21 @@ enum RowAction {
     Delete(String),
 }
 
+/// Ícone do aplicativo (`assets/neochat.png`), decodificado uma vez e guardado na memória do egui.
+fn logo_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
+    let id = egui::Id::unique("app_logo_texture");
+    if let Some(texture) = ctx.data(|d| d.get_temp::<egui::TextureHandle>(id)) {
+        return Some(texture);
+    }
+    let bytes = include_bytes!("../../assets/neochat.png");
+    let image = image::load_from_memory(bytes).ok()?.to_rgba8();
+    let size = [image.width() as usize, image.height() as usize];
+    let color = egui::ColorImage::from_rgba_unmultiplied(size, image.as_raw());
+    let texture = ctx.load_texture("app_logo", color, egui::TextureOptions::LINEAR);
+    ctx.data_mut(|d| d.insert_temp(id, texture.clone()));
+    Some(texture)
+}
+
 pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
     if app.sidebar_collapsed {
         return;
@@ -80,15 +95,14 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                     ui.horizontal(|ui| {
                         let (logo, _) =
                             ui.allocate_exact_size(egui::vec2(24.0, 24.0), Sense::hover());
-                        ui.painter()
-                            .rect_filled(logo, CornerRadius::same(4), colors.accent);
-                        ui.painter().text(
-                            logo.center(),
-                            Align2::CENTER_CENTER,
-                            "N",
-                            egui::FontId::proportional(16.0),
-                            Color32::WHITE,
-                        );
+                        if let Some(texture) = logo_texture(ui.ctx()) {
+                            ui.painter().image(
+                                texture.id(),
+                                logo,
+                                egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                                Color32::WHITE,
+                            );
+                        }
                         ui.add_space(2.0);
                         ui.label(
                             RichText::new("NeoChat Mistral")

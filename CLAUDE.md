@@ -10,7 +10,8 @@ Sempre que o usuário pedir uma entrega, faça **commit, push e release** (nesta
 2. Commit na `master` (mensagens em português, estilo `feat:`/`fix:`/`refactor:`), crie a tag `vX.Y.Z` e faça `git push origin master vX.Y.Z`.
 3. Crie a release com `gh release create vX.Y.Z --title "NeoChat vX.Y.Z" --notes "..."`.
 4. O executável não é anexado localmente: `.github/workflows/release.yml` roda `cargo build --release` no GitHub Actions ao receber a tag `v*` e anexa `NeoChat.exe` e o `.zip` (leva ~6 min). Confira com `gh run list`.
-5. "cargo release" aqui significa `cargo build --release` / `cargo run --release` (não há a ferramenta `cargo-release`); o binário local fica em `target\release\neochat.exe`.
+5. Gere também o `dist` local com `.\scripts\package.ps1` (feche o app antes, senão o build falha com "Acesso negado"); `dist\` fica fora do git.
+6. "cargo release" aqui significa `cargo build --release` / `cargo run --release` (não há a ferramenta `cargo-release`); o binário local fica em `target\release\neochat.exe`.
 
 ## Comandos
 
