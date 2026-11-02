@@ -50,7 +50,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                         .wrap(),
                                     );
                                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                        if ui.small_button("×").clicked() {
+                                        if ui.small_button("Ã—").clicked() {
                                             app.error = None;
                                         }
                                     });
@@ -62,7 +62,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                             ui.add(Label::new(
                                 RichText::new(status).small().color(colors.muted),
                             ));
-                            if ui.small_button("×").clicked() {
+                            if ui.small_button("Ã—").clicked() {
                                 app.status = None;
                             }
                         });
@@ -143,7 +143,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 };
 
                                 ui.painter()
-                                    .rect_filled(btn_rect, CornerRadius::same(16), bg_fill);
+                                    .rect_filled(btn_rect, CornerRadius::same(8), bg_fill);
 
                                 let c = btn_rect.center();
                                 if busy {
@@ -151,25 +151,20 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                     ui.painter()
                                         .rect_filled(sq, CornerRadius::same(2), fg_color);
                                 } else {
-                                    let stroke = Stroke::new(1.7, fg_color);
-                                    ui.painter().line_segment(
-                                        [egui::pos2(c.x, c.y + 5.5), egui::pos2(c.x, c.y - 5.0)],
-                                        stroke,
-                                    );
-                                    ui.painter().line_segment(
-                                        [
-                                            egui::pos2(c.x - 4.2, c.y - 1.0),
-                                            egui::pos2(c.x, c.y - 5.2),
-                                        ],
-                                        stroke,
-                                    );
-                                    ui.painter().line_segment(
-                                        [
-                                            egui::pos2(c.x + 4.2, c.y - 1.0),
-                                            egui::pos2(c.x, c.y - 5.2),
-                                        ],
-                                        stroke,
-                                    );
+                                    // Seta em pixels, como no botão da referência.
+                                    for (x, y, width, height) in [
+                                        (-1.0, -7.0, 2.0, 14.0),
+                                        (-3.0, -5.0, 2.0, 2.0),
+                                        (1.0, -5.0, 2.0, 2.0),
+                                        (-5.0, -3.0, 2.0, 2.0),
+                                        (3.0, -3.0, 2.0, 2.0),
+                                    ] {
+                                        let pixel = egui::Rect::from_min_size(
+                                            egui::pos2(c.x + x, c.y + y),
+                                            egui::vec2(width, height),
+                                        );
+                                        ui.painter().rect_filled(pixel, CornerRadius::ZERO, fg_color);
+                                    }
                                 }
 
                                 let tooltip = if busy {
