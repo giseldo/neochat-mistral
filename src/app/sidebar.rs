@@ -61,11 +61,11 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                     ui.painter().text(
                         egui::pos2(rect.left() + 30.0, rect.center().y),
                         Align2::LEFT_CENTER,
-                        "Configurações",
+                        super::i18n::tr("Configurações"),
                         egui::FontId::proportional(13.0),
                         fg,
                     );
-                    if resp.on_hover_text("Abrir configurações (Ctrl+,)").clicked() {
+                    if resp.on_hover_text(super::i18n::tr("Abrir configurações (Ctrl+,)")).clicked() {
                         app.open_settings();
                     }
                 });
@@ -130,13 +130,13 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                     ui.painter().text(
                         egui::pos2(btn_rect.left() + 30.0, btn_rect.center().y),
                         Align2::LEFT_CENTER,
-                        "Nova conversa",
+                        super::i18n::tr("Nova conversa"),
                         egui::FontId::proportional(13.5),
                         colors.assistant_text,
                     );
 
                     if btn_resp
-                        .on_hover_text("Criar uma nova conversa (Ctrl+N)")
+                        .on_hover_text(super::i18n::tr("Criar uma nova conversa (Ctrl+N)"))
                         .clicked()
                     {
                         app.new_conversation();
@@ -150,7 +150,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                     if ui
                         .add(
                             TextEdit::singleline(&mut search)
-                                .hint_text("Buscar conversas")
+                                .hint_text(super::i18n::tr("Buscar conversas"))
                                 .desired_width(f32::INFINITY),
                         )
                         .changed()
@@ -173,7 +173,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                             (
                                 conversation.id.clone(),
                                 if conversation.title.trim().is_empty() {
-                                    "Nova conversa".to_string()
+                                    super::i18n::tr("Nova conversa").to_string()
                                 } else {
                                     conversation.title.clone()
                                 },
@@ -191,7 +191,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                         .show(ui, |ui| {
                             if rows.is_empty() && !search.is_empty() {
                                 ui.label(
-                                    RichText::new("Nenhuma conversa encontrada")
+                                    RichText::new(super::i18n::tr("Nenhuma conversa encontrada"))
                                         .small()
                                         .color(colors.muted),
                                 );
@@ -207,7 +207,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                                     ui.horizontal(|ui| {
                                         ui.add_space(8.0);
                                         ui.add(Label::new(
-                                            RichText::new(group)
+                                            RichText::new(super::i18n::tr(group))
                                                 .size(10.5)
                                                 .strong()
                                                 .color(colors.muted.gamma_multiply(0.85)),
@@ -335,7 +335,7 @@ fn row(
                     [egui::pos2(c.x + r, c.y - r), egui::pos2(c.x - r, c.y + r)],
                     Stroke::new(1.3, del_color),
                 );
-                if del_resp.on_hover_text("Excluir conversa").clicked() {
+                if del_resp.on_hover_text(super::i18n::tr("Excluir conversa")).clicked() {
                     *action = Some(RowAction::Delete(id.to_string()));
                     clicked_inline_button = true;
                 }
@@ -358,7 +358,7 @@ fn row(
                 );
                 ui.painter()
                     .circle_filled(egui::pos2(rc.x - 4.0, rc.y + 4.0), 0.9, ren_color);
-                if ren_resp.on_hover_text("Renomear conversa").clicked() {
+                if ren_resp.on_hover_text(super::i18n::tr("Renomear conversa")).clicked() {
                     *action = Some(RowAction::Rename(id.to_string()));
                     clicked_inline_button = true;
                 }
@@ -371,11 +371,11 @@ fn row(
     }
 
     response.context_menu(|ui| {
-        if ui.button("Renomear").clicked() {
+        if ui.button(super::i18n::tr("Renomear")).clicked() {
             *action = Some(RowAction::Rename(id.to_string()));
             ui.close();
         }
-        if ui.button("Excluir").clicked() {
+        if ui.button(super::i18n::tr("Excluir")).clicked() {
             *action = Some(RowAction::Delete(id.to_string()));
             ui.close();
         }
@@ -392,18 +392,18 @@ pub(super) fn rename_window(app: &mut NeoChat, ctx: &egui::Context) {
     let mut cancel = false;
     let mut focus = app.rename_focus;
 
-    Window::new("Renomear conversa")
+    Window::new(super::i18n::tr("Renomear conversa"))
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
             ui.add_space(4.0);
-            ui.label("Novo título:");
+            ui.label(super::i18n::tr("Novo título:"));
             let edit = ui.add(
                 TextEdit::singleline(&mut buffer)
                     .desired_width(360.0)
-                    .hint_text("Título da conversa"),
+                    .hint_text(super::i18n::tr("Título da conversa")),
             );
             if focus {
                 edit.request_focus();
@@ -411,10 +411,10 @@ pub(super) fn rename_window(app: &mut NeoChat, ctx: &egui::Context) {
             }
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                if ui.button("Salvar").clicked() {
+                if ui.button(super::i18n::tr("Salvar")).clicked() {
                     save = true;
                 }
-                if ui.button("Cancelar").clicked() {
+                if ui.button(super::i18n::tr("Cancelar")).clicked() {
                     cancel = true;
                 }
             });
@@ -457,32 +457,32 @@ pub(super) fn delete_window(app: &mut NeoChat, ctx: &egui::Context) {
         .iter()
         .find(|c| c.id == id)
         .map(|c| c.title.clone())
-        .unwrap_or_else(|| "esta conversa".to_string());
+        .unwrap_or_else(|| super::i18n::tr("esta conversa").to_string());
 
     let mut open = true;
     let mut confirm = false;
     let mut cancel = false;
 
-    Window::new("Excluir conversa")
+    Window::new(super::i18n::tr("Excluir conversa"))
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
             ui.label(format!("Excluir \"{title}\"?"));
-            ui.label(RichText::new("Essa ação não pode ser desfeita.").weak());
+            ui.label(RichText::new(super::i18n::tr("Essa ação não pode ser desfeita.")).weak());
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 if ui
                     .add(
-                        Button::new(RichText::new("Excluir").color(Color32::WHITE))
+                        Button::new(RichText::new(super::i18n::tr("Excluir")).color(Color32::WHITE))
                             .fill(Color32::from_rgb(0xB3, 0x26, 0x1A)),
                     )
                     .clicked()
                 {
                     confirm = true;
                 }
-                if ui.button("Cancelar").clicked() {
+                if ui.button(super::i18n::tr("Cancelar")).clicked() {
                     cancel = true;
                 }
             });

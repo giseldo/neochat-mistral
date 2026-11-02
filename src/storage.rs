@@ -43,6 +43,21 @@ impl ThemeChoice {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Language {
+    #[default]
+    Portugues,
+    Ingles,
+    Frances,
+}
+
+impl Language {
+    pub fn label(self) -> &'static str {
+        match self { Self::Portugues => "Português", Self::Ingles => "English", Self::Frances => "Français" }
+    }
+}
+
 pub const DEFAULT_TEMPERATURE: f32 = 0.7;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +65,8 @@ pub struct Config {
     pub model: String,
     #[serde(default)]
     pub theme: ThemeChoice,
+    #[serde(default)]
+    pub language: Language,
     #[serde(default)]
     pub window_size: Option<[f32; 2]>,
     #[serde(default = "default_font_scale")]
@@ -82,6 +99,7 @@ impl Default for Config {
         Self {
             model,
             theme: ThemeChoice::Sistema,
+            language: Language::default(),
             window_size: None,
             font_scale: default_font_scale(),
             cached_models: Vec::new(),
@@ -456,10 +474,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn old_config_defaults_to_portuguese() {
+        let mut value = serde_json::to_value(Config::default()).unwrap();
+        value.as_object_mut().unwrap().remove("language");
+        let config: Config = serde_json::from_value(value).unwrap();
+        assert_eq!(config.language, Language::Portugues);
+    }
+
+    #[test]
     fn config_roundtrip() {
         let config = Config {
             model: "mistral-large-latest".to_string(),
             theme: ThemeChoice::Escuro,
+            language: Language::Ingles,
             window_size: Some([900.0, 700.0]),
             font_scale: 1.2,
             cached_models: vec!["codestral-latest".to_string()],
@@ -471,6 +498,7 @@ mod tests {
         let back: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(back.model, config.model);
         assert_eq!(back.theme, ThemeChoice::Escuro);
+        assert_eq!(back.language, Language::Ingles);
         assert_eq!(back.window_size, Some([900.0, 700.0]));
         assert_eq!(back.font_scale, 1.2);
         assert_eq!(back.cached_models, vec!["codestral-latest".to_string()]);

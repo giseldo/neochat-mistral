@@ -102,7 +102,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                         .id(composer_id)
                                         .frame(Frame::NONE)
                                         .align(egui::Align2::LEFT_CENTER)
-                                        .hint_text("Digite uma mensagem...")
+                                        .hint_text(super::i18n::tr("Digite uma mensagem..."))
                                         .desired_rows(line_count)
                                         .desired_width(f32::INFINITY),
                                 );
@@ -137,7 +137,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                                 ui.selectable_value(&mut selected, model.clone(), model);
                                             }
                                             ui.separator();
-                                            let label = if app.models_pending { "Carregando modelos..." } else { "Carregar todos os modelos" };
+                                            let label = if app.models_pending { super::i18n::tr("Carregando modelos...") } else { super::i18n::tr("Carregar todos os modelos") };
                                             if ui.add_enabled(!app.models_pending, egui::Button::new(label)).clicked() {
                                                 fetch = true;
                                                 ui.close();
@@ -207,9 +207,9 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 }
 
                                 let tooltip = if busy {
-                                    "Interromper resposta (Esc)"
+                                    super::i18n::tr("Interromper resposta (Esc)")
                                 } else {
-                                    "Enviar mensagem (Enter)"
+                                    super::i18n::tr("Enviar mensagem (Enter)")
                                 };
                                 if enabled && btn_resp.on_hover_text(tooltip).clicked() {
                                     if busy {

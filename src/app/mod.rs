@@ -1,10 +1,11 @@
+mod i18n;
 mod chat;
 mod composer;
 mod settings;
 mod sidebar;
 
 use crate::mistral::{Message, MistralClient, TokenUsage};
-use crate::storage::{ truncate_chars, Store, StoredMessage, ThemeChoice};
+use crate::storage::{ truncate_chars, Store, StoredMessage, ThemeChoice, Language};
 use crate::{secrets, theme};
 use eframe::egui;
 use egui::Context;
@@ -39,6 +40,7 @@ pub struct NeoChat {
     pub(super) settings_key: String,
     pub(super) settings_model: String,
     pub(super) settings_theme: ThemeChoice,
+    pub(super) settings_language: Language,
     pub(super) settings_temperature: f32,
     pub(super) settings_max_tokens: String,
     pub(super) settings_prompt_caching: bool,
@@ -68,6 +70,7 @@ pub struct NeoChat {
 
 impl NeoChat {
     pub fn new(cc: &eframe::CreationContext<'_>, mut store: Store) -> Self {
+        i18n::set_language(store.config.language);
         theme::install_fonts(&cc.egui_ctx);
         theme::apply(&cc.egui_ctx, store.config.theme);
         cc.egui_ctx.set_zoom_factor(store.config.font_scale);
@@ -104,6 +107,7 @@ impl NeoChat {
 
         let settings_model = store.config.model.clone();
         let settings_theme = store.config.theme;
+        let settings_language = store.config.language;
         let settings_temperature = store.config.temperature;
         let settings_max_tokens = store
             .config
@@ -128,6 +132,7 @@ impl NeoChat {
             settings_key: String::new(),
             settings_model,
             settings_theme,
+            settings_language,
             settings_temperature,
             settings_max_tokens,
             settings_prompt_caching,
@@ -288,6 +293,7 @@ impl NeoChat {
         self.settings_key = self.api_key.clone();
         self.settings_model = self.store.config.model.clone();
         self.settings_theme = self.store.config.theme;
+        self.settings_language = self.store.config.language;
         self.settings_temperature = self.store.config.temperature;
         self.settings_max_tokens = self
             .store
@@ -695,6 +701,8 @@ impl NeoChat {
         }
         self.store.config.model = self.settings_model.clone();
         self.store.config.theme = self.settings_theme;
+        self.store.config.language = self.settings_language;
+        i18n::set_language(self.settings_language);
         self.store.config.temperature =
             ((self.settings_temperature.clamp(0.0, 1.5) * 100.0).round()) / 100.0;
         self.store.config.max_tokens = self
@@ -706,7 +714,7 @@ impl NeoChat {
         self.store.config.prompt_caching = self.settings_prompt_caching;
         self.store.save();
         self.settings_open = false;
-        self.status = Some("Configurações salvas.".to_string());
+        self.status = Some(i18n::tr("Configurações salvas.").to_string());
         self.error = None;
     }
 
@@ -969,9 +977,9 @@ impl NeoChat {
                                 }
                                 ui.separator();
                                 let label = if models_pending {
-                                    "Carregando modelos..."
+                                    i18n::tr("Carregando modelos...")
                                 } else {
-                                    "Carregar todos os modelos"
+                                    i18n::tr("Carregar todos os modelos")
                                 };
                                 if ui.add_enabled(!models_pending, egui::Button::new(label)).clicked() {
                                     fetch_from_combo = true;

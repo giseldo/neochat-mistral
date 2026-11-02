@@ -57,7 +57,7 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
                 ui.painter().text(
                     egui::pos2(rect.center().x, rect.center().y - 16.0),
                     Align2::CENTER_CENTER,
-                    "Como posso ajudar?",
+                    super::i18n::tr("Como posso ajudar?"),
                     egui::FontId::proportional(22.0),
                     colors.assistant_text.gamma_multiply(0.85),
                 );
@@ -156,7 +156,7 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
                 .min_size(egui::vec2(34.0, 34.0));
                 if ui
                     .add(btn)
-                    .on_hover_text("Ir para o fim da conversa")
+                    .on_hover_text(super::i18n::tr("Ir para o fim da conversa"))
                     .clicked()
                 {
                     app.follow_output = true;
@@ -220,7 +220,7 @@ fn assistant_bubble(
                 if message.interrupted {
                     ui.add_space(4.0);
                     ui.label(
-                        RichText::new("Resposta interrompida")
+                        RichText::new(super::i18n::tr("Resposta interrompida"))
                             .size(11.5)
                             .italics()
                             .color(colors.muted),
@@ -235,7 +235,7 @@ fn assistant_bubble(
 
                         if !busy {
                             if ghost_action_button(ui, colors, is_copied, ActionIcon::Copy { done: is_copied }, true)
-                                .on_hover_text(if is_copied { "Copiado" } else { "Copiar resposta" }).clicked() {
+                                .on_hover_text(if is_copied { super::i18n::tr("Copiado") } else { super::i18n::tr("Copiar resposta") }).clicked() {
                                 *action = Some(ChatAction::Copy(index, message.content.clone()));
                             }
 
@@ -259,11 +259,11 @@ fn assistant_bubble(
             });
 
         frame.response.context_menu(|ui| {
-            if ui.button("Copiar").clicked() {
+            if ui.button(super::i18n::tr("Copiar")).clicked() {
                 *action = Some(ChatAction::Copy(index, message.content.clone()));
                 ui.close();
             }
-            if is_last && ui.button("Regenerar").clicked() {
+            if is_last && ui.button(super::i18n::tr("Regenerar")).clicked() {
                 *action = Some(ChatAction::Regenerate);
                 ui.close();
             }
@@ -354,7 +354,7 @@ fn streaming_bubble(
                 if text.is_empty() {
                     let thinking_label = match elapsed_ms.filter(|&ms| ms >= 200) {
                         Some(ms) => format!("Pensando... ({})", format_duration_ms(ms)),
-                        None => "Pensando...".to_string(),
+                        None => super::i18n::tr("Pensando...").to_string(),
                     };
                     ui.horizontal(|ui| {
                         ui.spinner();
