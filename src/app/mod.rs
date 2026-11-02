@@ -20,6 +20,7 @@ pub const SYSTEM_PROMPT: &str =
 
 pub enum Event {
     Token(String),
+    Thinking(String),
     Done(Option<TokenUsage>),
     Error(String),
 }
@@ -30,6 +31,7 @@ pub struct NeoChat {
     pub(super) api_key: String,
     pub(super) input: String,
     pub(super) partial: String,
+    pub(super) partial_thinking: String,
     pub(super) rx: Option<Receiver<Event>>,
     pub(super) cancel: Option<Arc<AtomicBool>>,
     pub(super) request_started_at: Option<Instant>,
@@ -123,6 +125,7 @@ impl NeoChat {
             api_key,
             input: String::new(),
             partial: String::new(),
+            partial_thinking: String::new(),
             rx: None,
             cancel: None,
             request_started_at: None,
@@ -329,6 +332,7 @@ impl NeoChat {
         }
         self.input.clear();
         self.partial.clear();
+        self.partial_thinking.clear();
         self.error = None;
         self.status = None;
         self.follow_output = true;
@@ -350,6 +354,7 @@ impl NeoChat {
             .retain(|c| !c.messages.is_empty() || c.id == target_id);
         self.store.conversations.active = Some(target_id);
         self.partial.clear();
+        self.partial_thinking.clear();
         self.error = None;
         self.status = None;
         self.follow_output = true;
@@ -363,6 +368,7 @@ impl NeoChat {
         self.store.conversations.clear_all();
         self.input.clear();
         self.partial.clear();
+        self.partial_thinking.clear();
         self.error = None;
         self.status = None;
         self.copied_feedback = None;
@@ -384,6 +390,7 @@ impl NeoChat {
     }
 
     fn push_assistant(&mut self, content: String, interrupted: bool, usage: Option<TokenUsage>) {
+        let thinking = std::mem::take(&mut self.partial_thinking);
         let duration_ms = self
             .request_started_at
             .take()
@@ -395,6 +402,7 @@ impl NeoChat {
         if let Some(conversation) = self.store.conversations.active_mut() {
             let mut message = StoredMessage::new("assistant", content);
             message.interrupted = interrupted;
+            message.thinking = (!thinking.trim().is_empty()).then_some(thinking);
             message.duration_ms = duration_ms;
             if let Some(u) = usage {
                 message.prompt_tokens = (u.prompt_tokens > 0).then_some(u.prompt_tokens);
@@ -431,6 +439,7 @@ impl NeoChat {
         self.error = None;
         self.status = None;
         self.partial.clear();
+        self.partial_thinking.clear();
         self.follow_output = true;
         self.jump_to_bottom = true;
         self.focus_composer = true;
@@ -470,7 +479,8 @@ impl NeoChat {
             Some(self.store.config.temperature),
             self.store.config.max_tokens,
         )
-        .with_prompt_cache_key(cache_key);
+        .with_prompt_cache_key(cache_key)
+        .with_thinking(self.store.config.think);
         let (tx, rx) = channel();
         let cancel = Arc::new(AtomicBool::new(false));
         let cancel_task = Arc::clone(&cancel);
@@ -479,21 +489,32 @@ impl NeoChat {
         self.rx = Some(rx);
         self.cancel = Some(cancel);
         self.partial.clear();
+        self.partial_thinking.clear();
         self.request_started_at = Some(Instant::now());
         self.streamed_tokens = 0;
 
         self.rt.spawn(async move {
             let tx_token = tx.clone();
             let ctx_token = ctx_task.clone();
+            let tx_think = tx.clone();
+            let ctx_think = ctx_task.clone();
             let result = client
-                .chat_stream_cancellable(&history, Some(&cancel_task), move |token| {
-                    tx_token.send(Event::Token(token.to_string())).ok();
-                    ctx_token.request_repaint();
-                })
+                .chat_stream_full(
+                    &history,
+                    Some(&cancel_task),
+                    move |token| {
+                        tx_token.send(Event::Token(token.to_string())).ok();
+                        ctx_token.request_repaint();
+                    },
+                    move |token| {
+                        tx_think.send(Event::Thinking(token.to_string())).ok();
+                        ctx_think.request_repaint();
+                    },
+                )
                 .await;
             match result {
-                Ok((_, usage)) => {
-                    tx.send(Event::Done(usage)).ok();
+                Ok(out) => {
+                    tx.send(Event::Done(out.usage)).ok();
                 }
                 Err(err) => {
                     tx.send(Event::Error(format!("{err:#}"))).ok();
@@ -552,6 +573,7 @@ impl NeoChat {
         self.error = None;
         self.status = None;
         self.partial.clear();
+        self.partial_thinking.clear();
         self.follow_output = true;
         self.jump_to_bottom = true;
         self.save();
@@ -567,6 +589,10 @@ impl NeoChat {
                 Ok(Event::Token(token)) => {
                     self.partial.push_str(&token);
                     self.streamed_tokens = self.streamed_tokens.saturating_add(1);
+                    self.follow_output = true;
+                }
+                Ok(Event::Thinking(token)) => {
+                    self.partial_thinking.push_str(&token);
                     self.follow_output = true;
                 }
                 Ok(Event::Done(usage)) => {

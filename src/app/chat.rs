@@ -113,6 +113,7 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
                                     ui,
                                     &colors,
                                     &mut cache,
+                                    app.partial_thinking.as_str(),
                                     text,
                                     elapsed_ms,
                                     app.streamed_tokens,
@@ -215,6 +216,9 @@ fn assistant_bubble(
             .fill(Color32::TRANSPARENT)
             .inner_margin(Margin::symmetric(2, 2))
             .show(ui, |ui| {
+                if let Some(thinking) = message.thinking.as_deref() {
+                    thinking_section(ui, colors, index, thinking, false);
+                }
                 CommonMarkViewer::new().show(ui, cache, &message.content);
 
                 if message.interrupted {
@@ -336,10 +340,30 @@ fn ghost_action_button(
     resp
 }
 
+fn thinking_section(ui: &mut Ui, colors: &ChatColors, index: usize, thinking: &str, open: bool) {
+    egui::CollapsingHeader::new(
+        RichText::new(super::i18n::tr("Raciocínio"))
+            .size(12.5)
+            .italics()
+            .color(colors.muted),
+    )
+    .id_salt(("thinking", index))
+    .default_open(open)
+    .show(ui, |ui| {
+        ui.add(
+            Label::new(RichText::new(thinking.trim()).size(13.0).color(colors.muted))
+                .selectable(true)
+                .wrap(),
+        );
+    });
+    ui.add_space(4.0);
+}
+
 fn streaming_bubble(
     ui: &mut Ui,
     colors: &ChatColors,
     cache: &mut CommonMarkCache,
+    thinking: &str,
     text: &str,
     elapsed_ms: Option<u64>,
     streamed_tokens: u32,
@@ -351,6 +375,9 @@ fn streaming_bubble(
             .fill(Color32::TRANSPARENT)
             .inner_margin(Margin::symmetric(2, 2))
             .show(ui, |ui| {
+                if !thinking.is_empty() {
+                    thinking_section(ui, colors, usize::MAX, thinking, true);
+                }
                 if text.is_empty() {
                     let thinking_label = match elapsed_ms.filter(|&ms| ms >= 200) {
                         Some(ms) => format!("Pensando... ({})", format_duration_ms(ms)),

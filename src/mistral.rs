@@ -7,10 +7,13 @@ use std::time::Duration;
 const API_URL: &str = "https://api.mistral.ai/v1/chat/completions";
 const MODELS_URL: &str = "https://api.mistral.ai/v1/models";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Message {
     pub role: String,
     pub content: String,
+    /// Raciocínio da resposta; reenviado como bloco `thinking` para manter a qualidade nos turnos seguintes.
+    #[serde(default)]
+    pub thinking: Option<String>,
 }
 
 impl Message {
@@ -18,8 +21,50 @@ impl Message {
         Self {
             role: role.to_string(),
             content: content.into(),
+            thinking: None,
         }
     }
+
+    pub fn with_thinking(mut self, thinking: Option<String>) -> Self {
+        self.thinking = thinking.filter(|t| !t.trim().is_empty());
+        self
+    }
+}
+
+impl Serialize for Message {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("Message", 2)?;
+        state.serialize_field("role", &self.role)?;
+        match self.thinking.as_deref().filter(|_| self.role == "assistant") {
+            Some(thinking) => state.serialize_field(
+                "content",
+                &serde_json::json!([
+                    { "type": "thinking", "thinking": [{ "type": "text", "text": thinking }] },
+                    { "type": "text", "text": self.content },
+                ]),
+            )?,
+            None => state.serialize_field("content", &self.content)?,
+        }
+        state.end()
+    }
+}
+
+/// Nível de raciocínio pedido à API (`reasoning_effort`).
+/// Devolve `None` quando o modelo não suporta o parâmetro.
+pub fn reasoning_effort(model: &str, think: bool) -> Option<&'static str> {
+    let m = model.to_ascii_lowercase();
+    if m.contains("glm") || m.contains("large") {
+        Some(if think { "high" } else { "low" })
+    } else if m.contains("small") || m.contains("medium") {
+        Some(if think { "high" } else { "none" })
+    } else {
+        None
+    }
+}
+
+pub fn supports_reasoning(model: &str) -> bool {
+    reasoning_effort(model, true).is_some()
 }
 
 #[derive(Serialize)]
@@ -33,6 +78,8 @@ struct ChatRequest<'a> {
     max_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     prompt_cache_key: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning_effort: Option<&'a str>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -76,7 +123,48 @@ struct StreamChoice {
 
 #[derive(Deserialize)]
 struct Delta {
-    content: Option<String>,
+    content: Option<serde_json::Value>,
+}
+
+/// Separa o `delta.content` em (raciocínio, texto): é string simples ou lista de blocos.
+fn split_content(content: &serde_json::Value) -> (String, String) {
+    let mut thinking = String::new();
+    let mut text = String::new();
+    match content {
+        serde_json::Value::String(s) => text.push_str(s),
+        serde_json::Value::Array(chunks) => {
+            for chunk in chunks {
+                match chunk.get("type").and_then(|t| t.as_str()) {
+                    Some("thinking") => match chunk.get("thinking") {
+                        Some(serde_json::Value::String(s)) => thinking.push_str(s),
+                        Some(serde_json::Value::Array(parts)) => {
+                            for part in parts {
+                                if let Some(t) = part.get("text").and_then(|t| t.as_str()) {
+                                    thinking.push_str(t);
+                                }
+                            }
+                        }
+                        _ => {}
+                    },
+                    Some("text") => {
+                        if let Some(t) = chunk.get("text").and_then(|t| t.as_str()) {
+                            text.push_str(t);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        _ => {}
+    }
+    (thinking, text)
+}
+
+#[derive(Debug, Default)]
+pub struct ChatOutput {
+    pub text: String,
+    pub thinking: String,
+    pub usage: Option<TokenUsage>,
 }
 
 #[derive(Deserialize)]
@@ -104,6 +192,7 @@ pub struct MistralClient {
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
     pub prompt_cache_key: Option<String>,
+    pub reasoning_effort: Option<&'static str>,
 }
 
 impl MistralClient {
@@ -120,7 +209,14 @@ impl MistralClient {
             temperature: None,
             max_tokens: None,
             prompt_cache_key: None,
+            reasoning_effort: None,
         }
+    }
+
+    /// Ativa (`true`) ou desativa o modo "Refletir"; ignorado em modelos sem suporte.
+    pub fn with_thinking(mut self, think: bool) -> Self {
+        self.reasoning_effort = reasoning_effort(&self.model, think);
+        self
     }
 
     pub fn with_params(mut self, temperature: Option<f32>, max_tokens: Option<u32>) -> Self {
@@ -155,8 +251,22 @@ impl MistralClient {
         &self,
         messages: &[Message],
         cancel: Option<&AtomicBool>,
-        mut on_token: impl FnMut(&str),
+        on_token: impl FnMut(&str),
     ) -> Result<(String, Option<TokenUsage>)> {
+        let out = self
+            .chat_stream_full(messages, cancel, on_token, |_| {})
+            .await?;
+        Ok((out.text, out.usage))
+    }
+
+    /// Como [`Self::chat_stream_cancellable`], mas também entrega o raciocínio em `on_thinking`.
+    pub async fn chat_stream_full(
+        &self,
+        messages: &[Message],
+        cancel: Option<&AtomicBool>,
+        mut on_token: impl FnMut(&str),
+        mut on_thinking: impl FnMut(&str),
+    ) -> Result<ChatOutput> {
         if self.api_key.trim().is_empty() {
             bail!("informe a chave da API da Mistral nas configuracoes");
         }
@@ -170,6 +280,7 @@ impl MistralClient {
                 .map(|t| ((t as f64) * 100.0).round() / 100.0),
             max_tokens: self.max_tokens.filter(|&m| m > 0),
             prompt_cache_key: self.prompt_cache_key.as_deref(),
+            reasoning_effort: self.reasoning_effort,
         };
 
         let resp = self
@@ -190,6 +301,7 @@ impl MistralClient {
         let mut stream = resp.bytes_stream();
         let mut buffer = String::new();
         let mut full = String::new();
+        let mut thinking = String::new();
         let mut usage: Option<TokenUsage> = None;
 
         'outer: while let Some(chunk) = stream.next().await {
@@ -215,20 +327,29 @@ impl MistralClient {
                             usage = Some(u);
                         }
                     }
-                    if let Some(text) = parsed
+                    if let Some(content) = parsed
                         .choices
                         .first()
-                        .and_then(|c| c.delta.content.as_deref())
+                        .and_then(|c| c.delta.content.as_ref())
                     {
+                        let (think, text) = split_content(content);
+                        if !think.is_empty() {
+                            on_thinking(&think);
+                            thinking.push_str(&think);
+                        }
                         if !text.is_empty() {
-                            on_token(text);
-                            full.push_str(text);
+                            on_token(&text);
+                            full.push_str(&text);
                         }
                     }
                 }
             }
         }
-        Ok((full, usage))
+        Ok(ChatOutput {
+            text: full,
+            thinking,
+            usage,
+        })
     }
 
     pub async fn test_connection(&self) -> Result<String> {
@@ -309,6 +430,37 @@ mod tests {
     }
 
     #[test]
+    fn reasoning_effort_by_model() {
+        assert_eq!(reasoning_effort("mistral-small-latest", true), Some("high"));
+        assert_eq!(reasoning_effort("mistral-small-2603", false), Some("none"));
+        assert_eq!(reasoning_effort("mistral-large-latest", false), Some("low"));
+        assert_eq!(reasoning_effort("open-mistral-nemo", true), None);
+    }
+
+    #[test]
+    fn delta_content_splits_thinking_and_text() {
+        let blocks = serde_json::json!([
+            { "type": "thinking", "thinking": [{ "type": "text", "text": "hmm " }] },
+            { "type": "text", "text": "10" }
+        ]);
+        assert_eq!(split_content(&blocks), ("hmm ".to_string(), "10".to_string()));
+        assert_eq!(
+            split_content(&serde_json::json!("ola")),
+            (String::new(), "ola".to_string())
+        );
+    }
+
+    #[test]
+    fn assistant_thinking_is_sent_as_blocks() {
+        let msg = Message::new("assistant", "resp").with_thinking(Some("pensei".into()));
+        let json = serde_json::to_value(&msg).unwrap();
+        assert_eq!(json["content"][0]["type"], "thinking");
+        assert_eq!(json["content"][1]["text"], "resp");
+        let plain = serde_json::to_value(Message::new("user", "oi")).unwrap();
+        assert_eq!(plain["content"], "oi");
+    }
+
+    #[test]
     fn message_conversion() {
         let message = Message::new("user", "ola");
         assert_eq!(message.role, "user");
@@ -341,6 +493,7 @@ mod tests {
             temperature: Some(0.3),
             max_tokens: Some(1024),
             prompt_cache_key: Some("conv-123"),
+            reasoning_effort: Some("high"),
         };
         let json = serde_json::to_string(&req).unwrap();
         assert!(json.contains(r#""temperature":0.3"#));
@@ -354,6 +507,7 @@ mod tests {
             temperature: None,
             max_tokens: None,
             prompt_cache_key: None,
+            reasoning_effort: None,
         };
         let json_default = serde_json::to_string(&req_default).unwrap();
         assert!(!json_default.contains("temperature"));

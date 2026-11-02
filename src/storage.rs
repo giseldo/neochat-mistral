@@ -79,6 +79,8 @@ pub struct Config {
     pub max_tokens: Option<u32>,
     #[serde(default = "default_prompt_caching")]
     pub prompt_caching: bool,
+    #[serde(default)]
+    pub think: bool,
 }
 
 fn default_font_scale() -> f32 {
@@ -106,6 +108,7 @@ impl Default for Config {
             temperature: default_temperature(),
             max_tokens: None,
             prompt_caching: default_prompt_caching(),
+            think: false,
         }
     }
 }
@@ -128,6 +131,8 @@ pub struct StoredMessage {
     pub total_tokens: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cached_tokens: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub thinking: Option<String>,
 }
 
 impl StoredMessage {
@@ -142,11 +147,12 @@ impl StoredMessage {
             completion_tokens: None,
             total_tokens: None,
             cached_tokens: None,
+            thinking: None,
         }
     }
 
     pub fn to_api(&self) -> Message {
-        Message::new(&self.role, self.content.clone())
+        Message::new(&self.role, self.content.clone()).with_thinking(self.thinking.clone())
     }
 
     pub fn is_user(&self) -> bool {
@@ -515,6 +521,7 @@ mod tests {
             temperature: 0.3,
             max_tokens: Some(2048),
             prompt_caching: true,
+            think: true,
         };
         let json = serde_json::to_string(&config).unwrap();
         let back: Config = serde_json::from_str(&json).unwrap();
@@ -527,6 +534,7 @@ mod tests {
         assert!((back.temperature - 0.3).abs() < 0.001);
         assert_eq!(back.max_tokens, Some(2048));
         assert!(back.prompt_caching);
+        assert!(back.think);
     }
 
     #[test]

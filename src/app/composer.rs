@@ -93,7 +93,11 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 ui.painter().line_segment([center + egui::vec2(0.0, -6.0), center + egui::vec2(0.0, 6.0)], stroke);
                                 plus_response.on_hover_text("Anexos indispon\u{00ed}veis");
                                 let show_model = ui.available_width() >= 300.0;
-                                let model_width = if show_model { 130.0 + spacing } else { 0.0 };
+                                let show_think = show_model
+                                    && ui.available_width() >= 400.0
+                                    && crate::mistral::supports_reasoning(&app.store.config.model);
+                                let model_width = if show_model { 130.0 + spacing } else { 0.0 }
+                                    + if show_think { 96.0 + spacing } else { 0.0 };
                                 let edit_width = (ui.available_width() - btn_size - spacing - model_width).max(60.0);
 
                                 let edit = ui.add_sized(
@@ -150,6 +154,25 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                     }
                                     if fetch {
                                         app.start_fetch_models(&ctx);
+                                    }
+                                }
+
+                                if show_think {
+                                    let mut think = app.store.config.think;
+                                    let label = if think { super::i18n::tr("Refletir") } else { super::i18n::tr("Rápido") };
+                                    egui::ComboBox::from_id_salt("composer_think")
+                                        .width(78.0)
+                                        .selected_text(RichText::new(label).size(13.0).color(colors.muted))
+                                        .show_ui(ui, |ui| {
+                                            ui.set_min_width(200.0);
+                                            ui.selectable_value(&mut think, false, super::i18n::tr("Rápido"))
+                                                .on_hover_text(super::i18n::tr("Obtenha respostas rápidas"));
+                                            ui.selectable_value(&mut think, true, super::i18n::tr("Refletir"))
+                                                .on_hover_text(super::i18n::tr("Lide com tarefas complexas"));
+                                        });
+                                    if think != app.store.config.think {
+                                        app.store.config.think = think;
+                                        app.store.save();
                                     }
                                 }
 

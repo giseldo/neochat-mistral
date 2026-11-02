@@ -88,6 +88,11 @@ pub fn tr(text: &'static str) -> &'static str {
         "Excluir todas as conversas" => if language == 1 { "Delete all chats" } else { "Supprimer toutes les conversations" },
         "Excluir todas as conversas e suas mensagens deste dispositivo?" => if language == 1 { "Delete all chats and their messages from this device?" } else { "Supprimer toutes les conversations et leurs messages de cet appareil ?" },
         "Excluir todas" => if language == 1 { "Delete all" } else { "Tout supprimer" },
+        "Rápido" => if language == 1 { "Fast" } else { "Rapide" },
+        "Refletir" => if language == 1 { "Think" } else { "Réfléchir" },
+        "Obtenha respostas rápidas" => if language == 1 { "Get quick answers" } else { "Obtenez des réponses rapides" },
+        "Lide com tarefas complexas" => if language == 1 { "Handle complex tasks" } else { "Gérez des tâches complexes" },
+        "Raciocínio" => if language == 1 { "Reasoning" } else { "Raisonnement" },
         _ => text,
     }
 }
