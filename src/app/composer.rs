@@ -93,7 +93,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 ui.painter().line_segment([center + egui::vec2(0.0, -6.0), center + egui::vec2(0.0, 6.0)], stroke);
                                 plus_response.on_hover_text("Anexos indispon\u{00ed}veis");
                                 let show_model = ui.available_width() >= 300.0;
-                                let model_width = if show_model { 92.0 + spacing } else { 0.0 };
+                                let model_width = if show_model { 130.0 + spacing } else { 0.0 };
                                 let edit_width = (ui.available_width() - btn_size - spacing - model_width).max(60.0);
 
                                 let edit = ui.add_sized(
@@ -122,12 +122,33 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 }
 
                                 if show_model {
-                                    let model_button = egui::Button::new(RichText::new("Modelo  \u{2304}").size(13.0).color(colors.muted))
-                                        .fill(egui::Color32::TRANSPARENT)
-                                        .stroke(Stroke::NONE)
-                                        .min_size(egui::vec2(92.0, 32.0));
-                                    if ui.add(model_button).on_hover_text(format!("Modelo atual: {}. Abrir configura\u{00e7}\u{00f5}es", app.store.config.model)).clicked() {
-                                        app.open_settings();
+                                    let models = app.model_list();
+                                    let mut selected = app.store.config.model.clone();
+                                    let display = crate::storage::truncate_chars(&selected, 14);
+                                    let mut fetch = false;
+                                    egui::ComboBox::from_id_salt("composer_model")
+                                        .width(112.0)
+                                        .height(300.0)
+                                        .selected_text(RichText::new(display).size(13.0).color(colors.muted))
+                                        .show_ui(ui, |ui| {
+                                            ui.set_min_width(240.0);
+                                            for model in &models {
+                                                ui.selectable_value(&mut selected, model.clone(), model);
+                                            }
+                                            ui.separator();
+                                            let label = if app.models_pending { "Carregando modelos..." } else { "Carregar todos os modelos" };
+                                            if ui.add_enabled(!app.models_pending, egui::Button::new(label)).clicked() {
+                                                fetch = true;
+                                                ui.close();
+                                            }
+                                        });
+                                    if selected != app.store.config.model {
+                                        app.store.config.model = selected.clone();
+                                        app.settings_model = selected;
+                                        app.store.save();
+                                    }
+                                    if fetch {
+                                        app.start_fetch_models(&ctx);
                                     }
                                 }
 
