@@ -95,7 +95,7 @@ cargo clippy --all-targets -- -D warnings
 
 ## Développement
 
-Développé par Giseldo.
+Développé par Giseldo Neo.
 
 ## Licence
 

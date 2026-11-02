@@ -50,7 +50,7 @@ pub fn tr(text: &'static str) -> &'static str {
         "Desconto de 90% em tokens já processados no histórico da conversa (blocos a partir de 64 tokens)." => if language == 1 { "90% discount on previously processed conversation tokens (blocks of 64 tokens or more)." } else { "Réduction de 90 % sur les tokens déjà traités de la conversation (blocs d’au moins 64 tokens)." },
         "Escolha como o NeoChat aparece no seu computador." => if language == 1 { "Choose how NeoChat looks on your computer." } else { "Choisissez l’apparence de NeoChat sur votre ordinateur." },
         "Sobre o NeoChat" => if language == 1 { "About NeoChat" } else { "À propos de NeoChat" },
-        "Desenvolvido por Giseldo" => if language == 1 { "Developed by Giseldo" } else { "Développé par Giseldo" },
+        "Desenvolvido por Giseldo Neo" => if language == 1 { "Developed by Giseldo Neo" } else { "Développé par Giseldo Neo" },
         "Repositório do projeto" => if language == 1 { "Project repository" } else { "Dépôt du projet" },
         "Salvar" => if language == 1 { "Save" } else { "Enregistrer" },
         "Cancelar" => if language == 1 { "Cancel" } else { "Annuler" },

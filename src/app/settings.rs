@@ -250,7 +250,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     if tab == 4 {
                     ui.label(RichText::new(super::i18n::tr("Sobre o NeoChat")).heading());
                     ui.label(format!("Versão {}", env!("CARGO_PKG_VERSION")));
-                    ui.label(super::i18n::tr("Desenvolvido por Giseldo"));
+                    ui.label(super::i18n::tr("Desenvolvido por Giseldo Neo"));
                     ui.label(super::i18n::tr("giseldo@gmail.com"));
                     ui.label(super::i18n::tr("Licença MIT"));
                     ui.hyperlink_to(
