@@ -234,32 +234,22 @@ fn assistant_bubble(
                         ui.spacing_mut().item_spacing.x = 4.0;
 
                         if !busy {
-                            if ghost_action_button(
-                                ui,
-                                colors,
-                                if is_copied { "Copiado" } else { "Copiar" },
-                                is_copied,
-                                ActionIcon::Copy { done: is_copied },
-                            )
-                            .on_hover_text("Copiar resposta")
-                            .clicked()
-                            {
-                                *action = Some(ChatAction::Copy(index, message.content.clone()));
+                            for (icon, tip) in [
+                                (ActionIcon::ThumbUp, "Avaliação positiva indisponível"),
+                                (ActionIcon::ThumbDown, "Avaliação negativa indisponível"),
+                            ] {
+                                ghost_action_button(ui, colors, false, icon, false).on_hover_text(tip);
                             }
-
-                            if is_last
-                                && ghost_action_button(
-                                    ui,
-                                    colors,
-                                    "Regenerar",
-                                    false,
-                                    ActionIcon::Regenerate,
-                                )
-                                .on_hover_text("Gerar uma nova resposta")
-                                .clicked()
-                            {
+                            if is_last && ghost_action_button(ui, colors, false, ActionIcon::Regenerate, true)
+                                .on_hover_text("Gerar uma nova resposta").clicked() {
                                 *action = Some(ChatAction::Regenerate);
                             }
+                            if ghost_action_button(ui, colors, is_copied, ActionIcon::Copy { done: is_copied }, true)
+                                .on_hover_text(if is_copied { "Copiado" } else { "Copiar resposta" }).clicked() {
+                                *action = Some(ChatAction::Copy(index, message.content.clone()));
+                            }
+                            ghost_action_button(ui, colors, false, ActionIcon::Play, false)
+                                .on_hover_text("Leitura em voz alta indisponível");
                         }
 
                         if let Some(summary) = metrics_summary {
@@ -295,23 +285,19 @@ fn assistant_bubble(
 enum ActionIcon {
     Copy { done: bool },
     Regenerate,
+    ThumbUp,
+    ThumbDown,
+    Play,
 }
 
 fn ghost_action_button(
     ui: &mut Ui,
     colors: &ChatColors,
-    label: &str,
     active: bool,
     icon: ActionIcon,
+    enabled: bool,
 ) -> egui::Response {
-    let font_id = egui::FontId::proportional(12.0);
-    let galley = ui
-        .painter()
-        .layout_no_wrap(label.to_string(), font_id.clone(), colors.muted);
-    let width = galley.size().x + 28.0;
-    let height = 24.0;
-
-    let (rect, resp) = ui.allocate_exact_size(egui::vec2(width, height), Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(32.0, 28.0), if enabled { Sense::click() } else { Sense::hover() });
     if resp.hovered() {
         ui.painter().rect_filled(
             rect,
@@ -328,8 +314,18 @@ fn ghost_action_button(
         colors.muted
     };
 
-    let ic = egui::pos2(rect.left() + 11.0, rect.center().y);
+    let ic = rect.center();
     match icon {
+        ActionIcon::ThumbUp | ActionIcon::ThumbDown => {
+            let direction = if matches!(icon, ActionIcon::ThumbUp) { 1.0 } else { -1.0 };
+            let points = [(-5.0, -1.0), (-3.0, -1.0), (-1.0, -5.0), (1.0, -5.0), (1.0, -1.0), (5.0, -1.0), (4.0, 4.0), (-5.0, 4.0), (-5.0, -1.0)];
+            let points = points.into_iter().map(|(x, y)| egui::pos2(ic.x + x, ic.y + y * direction)).collect();
+            ui.painter().add(egui::Shape::line(points, Stroke::new(1.2, fg)));
+        }
+        ActionIcon::Play => {
+            ui.painter().circle_stroke(ic, 7.0, Stroke::new(1.2, fg));
+            ui.painter().add(egui::Shape::closed_line(vec![egui::pos2(ic.x - 2.0, ic.y - 3.5), egui::pos2(ic.x + 4.0, ic.y), egui::pos2(ic.x - 2.0, ic.y + 3.5)], Stroke::new(1.2, fg)));
+        }
         ActionIcon::Copy { done: true } => {
             let stroke = Stroke::new(1.5, fg);
             ui.painter().line_segment(
@@ -368,13 +364,6 @@ fn ghost_action_button(
         }
     }
 
-    ui.painter().text(
-        egui::pos2(rect.left() + 21.0, rect.center().y),
-        Align2::LEFT_CENTER,
-        label,
-        font_id,
-        fg,
-    );
 
     resp
 }
