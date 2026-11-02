@@ -242,8 +242,7 @@ fn assistant_bubble(
                                 .on_hover_text(if is_copied { "Copiado" } else { "Copiar resposta" }).clicked() {
                                 *action = Some(ChatAction::Copy(index, message.content.clone()));
                             }
-                            ghost_action_button(ui, colors, false, ActionIcon::Play, false)
-                                .on_hover_text("Leitura em voz alta indisponível");
+
                         }
 
                         if let Some(summary) = metrics_summary {
@@ -279,7 +278,6 @@ fn assistant_bubble(
 enum ActionIcon {
     Copy { done: bool },
     Regenerate,
-    Play,
 }
 
 fn ghost_action_button(
@@ -308,10 +306,6 @@ fn ghost_action_button(
 
     let ic = rect.center();
     match icon {
-        ActionIcon::Play => {
-            ui.painter().circle_stroke(ic, 7.0, Stroke::new(1.2, fg));
-            ui.painter().add(egui::Shape::closed_line(vec![egui::pos2(ic.x - 2.0, ic.y - 3.5), egui::pos2(ic.x + 4.0, ic.y), egui::pos2(ic.x - 2.0, ic.y + 3.5)], Stroke::new(1.2, fg)));
-        }
         ActionIcon::Copy { done: true } => {
             let stroke = Stroke::new(1.5, fg);
             ui.painter().line_segment(
