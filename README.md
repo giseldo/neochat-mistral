@@ -19,7 +19,7 @@ A Windows desktop client written in Rust for chatting with [Mistral](https://mis
 - Model selection in the top bar or settings, with an option to load models available from the API.
 - Temperature, token limit, context caching and system, light or dark theme settings.
 - Mistral account login or API key authentication, with the key protected by Windows DPAPI.
-- Generation metrics when available and a `neochat-cli` terminal client.
+- Generation metrics when available.
 
 ## Build requirements
 
@@ -54,15 +54,6 @@ The script builds the release and creates `dist\NeoChat.exe`, a copy named `dist
 
 When a GitHub release is published, GitHub Actions builds and attaches `NeoChat-windows-x86_64.exe` and `NeoChat-linux-x86_64`. On Linux, make the binary executable with `chmod +x NeoChat-linux-x86_64`. The Linux binary requires system graphics libraries; API keys saved on disk are not encrypted on Linux.
 
-## Terminal client
-
-```powershell
-$env:MISTRAL_API_KEY = "your-api-key"
-cargo run --release --bin neochat-cli
-```
-
-The CLI also uses the key saved by the desktop application if the variable is not set. Set `MISTRAL_MODEL` to select a model. Available commands are `/ajuda` (help), `/limpar` (clear), `/modelo` (current model) and `/sair` (exit).
-
 ## Keyboard shortcuts
 
 | Shortcut | Action |
@@ -88,7 +79,7 @@ Messages you send are transmitted to the Mistral API. Login and model loading al
 
 ## Structure and verification
 
-The UI is in `src/app/`; the API client is in `src/mistral.rs`; persistence is in `src/storage.rs` and `src/secrets.rs`; and the CLI is in `src/bin/neochat-cli.rs`.
+The UI is in `src/app/`; the API client is in `src/mistral.rs`; persistence is in `src/storage.rs` and `src/secrets.rs`.
 
 ```powershell
 cargo test --all-targets

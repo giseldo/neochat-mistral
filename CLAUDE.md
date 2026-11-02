@@ -19,7 +19,6 @@ App desktop para Windows (Rust, egui/eframe). Requer toolchain MSVC e Windows SD
 
 ```bash
 cargo run --release                        # app gráfico
-cargo run --release --bin neochat-cli      # versão de terminal (MISTRAL_API_KEY, MISTRAL_MODEL)
 cargo test                                 # todos os testes (unitários, dentro dos módulos)
 cargo test reasoning_effort_by_model       # um teste específico
 .\scripts\package.ps1                      # gera dist\NeoChat.exe
@@ -29,7 +28,7 @@ Não há lint/CI além do workflow de release.
 
 ## Arquitetura
 
-Crate `neochat` com `lib.rs` (módulos `app`, `mistral`, `oauth`, `secrets`, `storage`, `theme`) e dois binários: `src/main.rs` (GUI) e `src/bin/neochat-cli.rs`. Estado persistido em `%APPDATA%\NeoChat` (`config.json`, `conversations.json`, `secret.dat` criptografado com DPAPI).
+Crate `neochat` com `lib.rs` (módulos `app`, `mistral`, `oauth`, `secrets`, `storage`, `theme`) e o binário `src/main.rs` (GUI). Estado persistido em `%APPDATA%\NeoChat` (`config.json`, `conversations.json`, `secret.dat` criptografado com DPAPI).
 
 - **`mistral.rs`** — cliente HTTP da API da Mistral (`chat/completions` em streaming SSE e `/v1/models`). `chat_stream_full` é o núcleo; `chat_stream_cancellable` e `chat_stream` delegam a ele. O `delta.content` pode ser string ou lista de blocos (`thinking`/`text`), tratado em `split_content`. `Message` tem `Serialize` manual: mensagens do assistente com `thinking` viram lista de blocos, e o cliente remove esse raciocínio do histórico quando o raciocínio não está ativo (a API devolve 400 caso contrário).
 - **Modos Rápido/Refletir** — `reasoning_effort(model, think)` associa IDs de modelos com suporte conhecido ao parâmetro `reasoning_effort` da API; outros modelos retornam `None` e não recebem o parâmetro (e o seletor fica oculto no compositor). A escolha é `Config.think`.
