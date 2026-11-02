@@ -347,6 +347,13 @@ impl Conversations {
         self.items.last_mut().expect("acabou de ser inserida")
     }
 
+    pub fn clear_all(&mut self) {
+        let fresh = self.new_conversation().clone();
+        self.items.clear();
+        self.active = Some(fresh.id.clone());
+        self.items.push(fresh);
+    }
+
     pub fn remove(&mut self, id: &str) {
         self.items.retain(|c| c.id != id);
         if self.active.as_deref() == Some(id) {
@@ -479,6 +486,21 @@ mod tests {
         value.as_object_mut().unwrap().remove("language");
         let config: Config = serde_json::from_value(value).unwrap();
         assert_eq!(config.language, Language::Portugues);
+    }
+
+    #[test]
+    fn clear_all_starts_a_fresh_conversation() {
+        let mut conversations = Conversations::default();
+        conversations.new_conversation().messages.push(StoredMessage::new("user", "private"));
+        let old_id = conversations.active.clone();
+        conversations.new_conversation().messages.push(StoredMessage::new("user", "another"));
+        conversations.clear_all();
+        assert_eq!(conversations.items.len(), 1);
+        assert!(conversations.active().unwrap().messages.is_empty());
+        assert_ne!(conversations.active, old_id);
+        let restored: Conversations = serde_json::from_str(&serde_json::to_string(&conversations).unwrap()).unwrap();
+        assert_eq!(restored.items.len(), 1);
+        assert!(restored.active().unwrap().messages.is_empty());
     }
 
     #[test]

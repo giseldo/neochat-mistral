@@ -83,6 +83,11 @@ pub fn tr(text: &'static str) -> &'static str {
         "Últimos 7 dias" => if language == 1 { "Last 7 days" } else { "7 derniers jours" },
         "Últimos 30 dias" => if language == 1 { "Last 30 days" } else { "30 derniers jours" },
         "Anteriores" => if language == 1 { "Older" } else { "Plus anciennes" },
+        "Conversas" => if language == 1 { "Chats" } else { "Conversations" },
+        "Exclua todo o histórico de conversas deste dispositivo." => if language == 1 { "Delete all chat history from this device." } else { "Supprimez tout l’historique des conversations de cet appareil." },
+        "Excluir todas as conversas" => if language == 1 { "Delete all chats" } else { "Supprimer toutes les conversations" },
+        "Excluir todas as conversas e suas mensagens deste dispositivo?" => if language == 1 { "Delete all chats and their messages from this device?" } else { "Supprimer toutes les conversations et leurs messages de cet appareil ?" },
+        "Excluir todas" => if language == 1 { "Delete all" } else { "Tout supprimer" },
         _ => text,
     }
 }

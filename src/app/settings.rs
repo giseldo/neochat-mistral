@@ -46,7 +46,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
-                for (index, label) in [super::i18n::tr("Conta"), super::i18n::tr("Modelo"), super::i18n::tr("Geração"), super::i18n::tr("Aparência"), super::i18n::tr("Sobre")].iter().enumerate() {
+                for (index, label) in [super::i18n::tr("Conta"), super::i18n::tr("Modelo"), super::i18n::tr("Geração"), super::i18n::tr("Aparência"), super::i18n::tr("Sobre"), super::i18n::tr("Conversas")].iter().enumerate() {
                     if ui.selectable_label(tab == index, *label).clicked() {
                         tab = index;
                     }
@@ -239,6 +239,14 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     });
 
                     }
+                    if tab == 5 {
+                        ui.label(RichText::new(super::i18n::tr("Conversas")).heading());
+                        ui.label(super::i18n::tr("Exclua todo o histórico de conversas deste dispositivo."));
+                        ui.add_space(10.0);
+                        if ui.button(super::i18n::tr("Excluir todas as conversas")).clicked() {
+                            app.delete_all_confirm = true;
+                        }
+                    }
                     if tab == 4 {
                     ui.label(RichText::new(super::i18n::tr("Sobre o NeoChat")).heading());
                     ui.label(format!("Versão {}", env!("CARGO_PKG_VERSION")));
@@ -286,4 +294,31 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     if logout {
         app.logout();
     }
+}
+
+
+pub(super) fn confirm_delete_all(app: &mut NeoChat, ctx: &egui::Context) {
+    if !app.delete_all_confirm { return; }
+    let mut open = true;
+    let mut confirm = false;
+    let mut cancel = false;
+    Window::new(super::i18n::tr("Excluir todas as conversas"))
+        .open(&mut open)
+        .collapsible(false)
+        .resizable(false)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.label(super::i18n::tr("Excluir todas as conversas e suas mensagens deste dispositivo?"));
+            ui.label(RichText::new(super::i18n::tr("Essa ação não pode ser desfeita.")).weak());
+            ui.add_space(8.0);
+            ui.horizontal(|ui| {
+                if ui.button(super::i18n::tr("Excluir todas")).clicked() { confirm = true; }
+                if ui.button(super::i18n::tr("Cancelar")).clicked() { cancel = true; }
+            });
+        });
+    if confirm {
+        app.delete_all_conversations();
+        app.settings_open = false;
+    }
+    if confirm || cancel || !open { app.delete_all_confirm = false; }
 }

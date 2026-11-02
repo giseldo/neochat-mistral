@@ -37,6 +37,7 @@ pub struct NeoChat {
     pub(super) error: Option<String>,
     pub(super) status: Option<String>,
     pub(super) settings_open: bool,
+    pub(super) delete_all_confirm: bool,
     pub(super) settings_key: String,
     pub(super) settings_model: String,
     pub(super) settings_theme: ThemeChoice,
@@ -129,6 +130,7 @@ impl NeoChat {
             error: None,
             status: None,
             settings_open: false,
+            delete_all_confirm: false,
             settings_key: String::new(),
             settings_model,
             settings_theme,
@@ -350,6 +352,20 @@ impl NeoChat {
         self.partial.clear();
         self.error = None;
         self.status = None;
+        self.follow_output = true;
+        self.jump_to_bottom = true;
+        self.focus_composer = true;
+        self.save();
+    }
+
+    pub(super) fn delete_all_conversations(&mut self) {
+        if self.busy() { self.stop(); }
+        self.store.conversations.clear_all();
+        self.input.clear();
+        self.partial.clear();
+        self.error = None;
+        self.status = None;
+        self.copied_feedback = None;
         self.follow_output = true;
         self.jump_to_bottom = true;
         self.focus_composer = true;
@@ -1032,6 +1048,7 @@ impl eframe::App for NeoChat {
         composer::composer(self, ui);
         chat::chat_area(self, ui);
         settings::settings_window(self, &ctx);
+        settings::confirm_delete_all(self, &ctx);
         sidebar::rename_window(self, &ctx);
         sidebar::delete_window(self, &ctx);
     }
