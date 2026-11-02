@@ -2,6 +2,10 @@
 
 [Leia em português](README.md)
 
+<img width="1919" height="1007" alt="image" src="https://github.com/user-attachments/assets/70c91454-0fe3-4520-897b-6267b3ee409a" />
+
+<img width="1914" height="1003" alt="image" src="https://github.com/user-attachments/assets/0fb6caf7-64da-4a82-9054-10bc9d5a96aa" />
+
 A Windows desktop client written in Rust for chatting with models available through the [Mistral](https://mistral.ai) API. It provides streaming responses, Markdown and local conversation history. The interface uses egui and eframe.
 
 > **Independent project:** NeoChat has no affiliation or relationship with Mistral AI. It is not an official Mistral product.
