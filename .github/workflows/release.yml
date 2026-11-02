@@ -42,6 +42,8 @@ jobs:
           New-Item -ItemType Directory -Path package -Force | Out-Null
           Copy-Item target/release/neochat.exe package/NeoChat.exe
           Copy-Item README.md package/README.md
+          Copy-Item README.pt-BR.md package/README.pt-BR.md
+          Copy-Item README.fr.md package/README.fr.md
           Copy-Item LICENSE package/LICENSE
           Compress-Archive -Path package/* -DestinationPath NeoChat-windows-x86_64.zip
       - name: Upload binary to release

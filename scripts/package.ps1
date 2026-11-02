@@ -28,6 +28,8 @@ try {
     Copy-Item -LiteralPath $exe -Destination (Join-Path $dist "NeoChat.exe") -Force
     Copy-Item -LiteralPath $exe -Destination (Join-Path $dist "NeoChat Mistral.exe") -Force
     Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination (Join-Path $dist "README.md") -Force
+    Copy-Item -LiteralPath (Join-Path $root "README.pt-BR.md") -Destination (Join-Path $dist "README.pt-BR.md") -Force
+    Copy-Item -LiteralPath (Join-Path $root "README.fr.md") -Destination (Join-Path $dist "README.fr.md") -Force
     Copy-Item -LiteralPath (Join-Path $root "LICENSE") -Destination (Join-Path $dist "LICENSE") -Force
 
     $size = [math]::Round((Get-Item -LiteralPath (Join-Path $dist "NeoChat.exe")).Length / 1MB, 1)

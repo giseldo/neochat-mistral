@@ -1,102 +1,102 @@
 # NeoChat
 
-[Read in English](README.en.md)
+[Português](README.pt-BR.md) | [Français](README.fr.md)
 
 <img width="1919" height="1007" alt="image" src="https://github.com/user-attachments/assets/70c91454-0fe3-4520-897b-6267b3ee409a" />
 
 <img width="1914" height="1003" alt="image" src="https://github.com/user-attachments/assets/0fb6caf7-64da-4a82-9054-10bc9d5a96aa" />
 
-Cliente desktop para Windows, desenvolvido em Rust, para conversar com modelos da [Mistral](https://mistral.ai). Entre com sua conta Mistral pelo navegador ou informe uma chave de API. Oferece respostas em streaming, Markdown e histórico local de conversas. A interface usa egui e eframe.
+A Windows desktop client written in Rust for chatting with [Mistral](https://mistral.ai) models. Sign in with your Mistral account in your browser or provide an API key. It provides streaming responses, Markdown and local conversation history. The interface uses egui and eframe.
 
-> **Projeto independente:** o NeoChat não tem vínculo, afiliação ou relação com a empresa Mistral AI. Não é um produto oficial da Mistral.
+> **Independent project:** NeoChat has no affiliation or relationship with Mistral AI. It is not an official Mistral product.
 
-## Funcionalidades
+## Features
 
-- Respostas em streaming, com opção de interromper, copiar ou regenerar.
-- Conversas na barra lateral, com busca por título, criação, renomeação e exclusão.
-- Seleção de modelo na barra superior ou nas configurações, com opção de carregar os modelos disponíveis na API.
-- Ajustes de temperatura, limite de tokens, cache de contexto e tema claro, escuro ou do sistema.
-- Login pela conta Mistral ou uso de chave de API, protegida no Windows com DPAPI.
-- Métricas de geração quando disponíveis e cliente de terminal `neochat-cli`.
+- Streaming responses with stop, copy and regenerate actions.
+- Sidebar conversation management, including title search, creation, renaming and deletion.
+- Model selection in the top bar or settings, with an option to load models available from the API.
+- Temperature, token limit, context caching and system, light or dark theme settings.
+- Mistral account login or API key authentication, with the key protected by Windows DPAPI.
+- Generation metrics when available and a `neochat-cli` terminal client.
 
-## Requisitos para compilar
+## Build requirements
 
-- Windows 10 ou 11, 64 bits, com driver gráfico atualizado.
-- Rust estável com toolchain MSVC (testado com Rust 1.99.1).
-- Visual Studio Build Tools com a carga de trabalho **Desktop development with C++**, incluindo Windows SDK e `rc.exe`.
+- 64-bit Windows 10 or 11 with an up-to-date graphics driver.
+- Stable Rust with the MSVC toolchain (tested with Rust 1.99.1).
+- Visual Studio Build Tools with the **Desktop development with C++** workload, including the Windows SDK and `rc.exe`.
 
-## Executar
+## Run
 
 ```powershell
 cargo run --release
 ```
 
-Abra **Configurações** na barra lateral ou pressione `Ctrl+,`. Na aba **Conta**, clique em **Entrar com a conta Mistral** e conclua o login no navegador com sua conta Mistral. Como alternativa, informe uma chave obtida no [console da Mistral](https://console.mistral.ai/api-keys). O login pelo navegador também obtém uma chave de API para o aplicativo usar nas conversas. Para confirmar as configurações editadas, clique em **Salvar**.
+Open **Configurações** (Settings) in the sidebar or press `Ctrl+,`. In the **Conta** (Account) tab, click **Entrar com a conta Mistral** and complete sign-in with your Mistral account in your browser. Alternatively, enter a key from the [Mistral console](https://console.mistral.ai/api-keys). Browser sign-in also obtains an API key for the application to use in conversations. Click **Salvar** (Save) to apply edited settings. The application interface is in Portuguese.
 
-Também é possível fornecer a chave pela variável de ambiente:
+Alternatively, provide the key through an environment variable:
 
 ```powershell
-$env:MISTRAL_API_KEY = "sua-chave"
+$env:MISTRAL_API_KEY = "your-api-key"
 cargo run --release
 ```
 
-As configurações são organizadas nas abas **Conta**, **Modelo**, **Geração**, **Aparência** e **Sobre**. O botão **Testar conexão** está na aba Conta.
+Settings are organized into Account, Model, Generation, Appearance and About tabs. The connection test is in the Account tab.
 
-## Gerar o pacote
+## Package
 
 ```powershell
 .\scripts\package.ps1
 ```
 
-O script compila em modo release e gera `dist\NeoChat.exe`, uma cópia com o nome `dist\NeoChat Mistral.exe`, `dist\README.md` e `dist\LICENSE`. A pasta pode ser copiada para outro computador Windows compatível; Rust e as ferramentas de compilação não são necessários para executar o pacote.
+The script builds the release and creates `dist\NeoChat.exe`, a copy named `dist\NeoChat Mistral.exe`, `dist\README.md`, and `dist\LICENSE`. The folder can be copied to another compatible Windows computer; Rust and build tools are not needed to run the package.
 
-Ao publicar uma release no GitHub, o GitHub Actions compila e anexa automaticamente `NeoChat-windows-x86_64.exe` e `NeoChat-linux-x86_64`. No Linux, dê permissão de execução com `chmod +x NeoChat-linux-x86_64`. O binário Linux depende das bibliotecas gráficas do sistema; a chave de API salva em disco não é criptografada nessa plataforma.
+When a GitHub release is published, GitHub Actions builds and attaches `NeoChat-windows-x86_64.exe` and `NeoChat-linux-x86_64`. On Linux, make the binary executable with `chmod +x NeoChat-linux-x86_64`. The Linux binary requires system graphics libraries; API keys saved on disk are not encrypted on Linux.
 
-## Versão de terminal
+## Terminal client
 
 ```powershell
-$env:MISTRAL_API_KEY = "sua-chave"
+$env:MISTRAL_API_KEY = "your-api-key"
 cargo run --release --bin neochat-cli
 ```
 
-A CLI também usa a chave salva pelo aplicativo se a variável não estiver definida. O modelo pode ser definido com `MISTRAL_MODEL`. Os comandos disponíveis são `/ajuda`, `/limpar`, `/modelo` e `/sair`.
+The CLI also uses the key saved by the desktop application if the variable is not set. Set `MISTRAL_MODEL` to select a model. Available commands are `/ajuda` (help), `/limpar` (clear), `/modelo` (current model) and `/sair` (exit).
 
-## Atalhos
+## Keyboard shortcuts
 
-| Atalho | Ação |
+| Shortcut | Action |
 | --- | --- |
-| `Enter` | Enviar mensagem |
-| `Shift+Enter` | Inserir quebra de linha |
-| `Esc` | Interromper geração ou fechar janela |
-| `Ctrl+N` | Nova conversa |
-| `Ctrl+,` | Abrir configurações |
-| `Ctrl+B` | Mostrar ou ocultar a barra lateral |
+| `Enter` | Send message |
+| `Shift+Enter` | Insert line break |
+| `Esc` | Stop generation or close window |
+| `Ctrl+N` | New conversation |
+| `Ctrl+,` | Open settings |
+| `Ctrl+B` | Show or hide the sidebar |
 
-## Dados e privacidade
+## Data and privacy
 
-O aplicativo armazena dados em `%APPDATA%\NeoChat`:
+The application stores data in `%APPDATA%\NeoChat`:
 
-| Arquivo | Conteúdo |
+| File | Contents |
 | --- | --- |
-| `config.json` | Modelo, tema, parâmetros de geração e preferências |
-| `conversations.json` | Conversas, mensagens e métricas |
-| `secret.dat` | Chave de API criptografada com DPAPI para o usuário atual do Windows |
+| `config.json` | Model, theme, generation parameters and preferences |
+| `conversations.json` | Conversations, messages and metrics |
+| `secret.dat` | API key encrypted with DPAPI for the current Windows user |
 
-As mensagens enviadas são transmitidas à API da Mistral. O login e o carregamento de modelos também se comunicam com serviços da Mistral.
+Messages you send are transmitted to the Mistral API. Login and model loading also communicate with Mistral services.
 
-## Estrutura e verificação
+## Structure and verification
 
-A interface fica em `src/app/`; o cliente da API em `src/mistral.rs`; a persistência em `src/storage.rs` e `src/secrets.rs`; e a CLI em `src/bin/neochat-cli.rs`.
+The UI is in `src/app/`; the API client is in `src/mistral.rs`; persistence is in `src/storage.rs` and `src/secrets.rs`; and the CLI is in `src/bin/neochat-cli.rs`.
 
 ```powershell
 cargo test --all-targets
 cargo clippy --all-targets -- -D warnings
 ```
 
-## Desenvolvimento
+## Development
 
-Desenvolvido por Giseldo.
+Developed by Giseldo.
 
-## Licença
+## License
 
-Distribuído sob a [licença MIT](LICENSE).
+Distributed under the [MIT License](LICENSE).
