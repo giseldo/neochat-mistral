@@ -2,6 +2,8 @@
 
 [Português](README.pt-BR.md) | [Français](README.fr.md)
 
+<img src="assets/neochat-logo.png" alt="NeoChat origami bird logo" width="300" />
+
 <img width="1919" height="1007" alt="image" src="https://github.com/user-attachments/assets/70c91454-0fe3-4520-897b-6267b3ee409a" />
 
 <img width="1914" height="1003" alt="image" src="https://github.com/user-attachments/assets/0fb6caf7-64da-4a82-9054-10bc9d5a96aa" />

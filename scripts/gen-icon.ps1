@@ -4,101 +4,21 @@ $root = Split-Path -Parent $PSScriptRoot
 $assets = Join-Path $root "assets"
 New-Item -ItemType Directory -Force -Path $assets | Out-Null
 
+$sourcePath = Join-Path $assets "neochat-source.png"
+$source = [System.Drawing.Image]::FromFile($sourcePath)
+
 function New-NeoChatBitmap([int]$size) {
     $bmp = New-Object System.Drawing.Bitmap($size, $size, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
     $g.Clear([System.Drawing.Color]::Transparent)
-
-    $pad = [single]($size * 0.06)
-    $side = [single]($size - 2 * $pad)
-    $radius = [single]($side * 0.24)
-    $rect = New-Object System.Drawing.RectangleF($pad, $pad, $side, $side)
-
-    $shape = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $d = $radius * 2
-    $shape.AddArc($rect.X, $rect.Y, $d, $d, 180, 90)
-    $shape.AddArc($rect.Right - $d, $rect.Y, $d, $d, 270, 90)
-    $shape.AddArc($rect.Right - $d, $rect.Bottom - $d, $d, $d, 0, 90)
-    $shape.AddArc($rect.X, $rect.Bottom - $d, $d, $d, 90, 90)
-    $shape.CloseFigure()
-
-    $start = [System.Drawing.Color]::FromArgb(255, 150, 15, 25)
-    $end = [System.Drawing.Color]::FromArgb(255, 228, 45, 50)
-    $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush($rect, $start, $end, 55.0)
-    $g.FillPath($brush, $shape)
-    $brush.Dispose()
-
-    $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(70, 255, 255, 255), [single]([Math]::Max(1, $size * 0.008)))
-    $g.DrawPath($pen, $shape)
-    $pen.Dispose()
-
-    $bubbleW = [single]($side * 0.56)
-    $bubbleH = [single]($side * 0.42)
-    $bubbleX = [single]($pad + ($side - $bubbleW) / 2)
-    $bubbleY = [single]($pad + ($side - $bubbleH) / 2 - $side * 0.03)
-    $bubbleR = [single]($bubbleH * 0.42)
-    $bubble = New-Object System.Drawing.RectangleF($bubbleX, $bubbleY, $bubbleW, $bubbleH)
-
-    $bubblePath = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $bd = $bubbleR * 2
-    $bubblePath.AddArc($bubble.X, $bubble.Y, $bd, $bd, 180, 90)
-    $bubblePath.AddArc($bubble.Right - $bd, $bubble.Y, $bd, $bd, 270, 90)
-    $bubblePath.AddArc($bubble.Right - $bd, $bubble.Bottom - $bd, $bd, $bd, 0, 90)
-    $bubblePath.AddArc($bubble.X, $bubble.Bottom - $bd, $bd, $bd, 90, 90)
-    $bubblePath.CloseFigure()
-
-    $tail = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $tx = $bubbleX + $bubbleW * 0.28
-    $ty = $bubbleY + $bubbleH * 0.82
-    $tail.AddPolygon(@(
-        (New-Object System.Drawing.PointF($tx, $ty)),
-        (New-Object System.Drawing.PointF(($tx + $bubbleW * 0.18), $ty)),
-        (New-Object System.Drawing.PointF($tx, ($ty + $bubbleH * 0.34)))
-    ))
-
-    $white = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
-    $g.FillPath($white, $bubblePath)
-    $g.FillPath($white, $tail)
-    $white.Dispose()
-    $bubblePath.Dispose()
-    $tail.Dispose()
-
-    # Monograma NM: traços amplos mantêm a leitura nos tamanhos menores.
-    $ink = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 170, 20, 30), [single]($bubbleH * 0.11))
-    $ink.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $ink.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $ink.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-    $x0 = [single]($bubbleX + $bubbleW * 0.14)
-    $nL = $x0
-    $nR = [single]($x0 + $bubbleW * 0.26)
-    $mL = [single]($x0 + $bubbleW * 0.38)
-    $mR = [single]($x0 + $bubbleW * 0.72)
-    $mM = [single](($mL + $mR) / 2)
-    $top = [single]($bubbleY + $bubbleH * 0.28)
-    $bottom = [single]($bubbleY + $bubbleH * 0.72)
-    $mid = [single]($top + ($bottom - $top) * 0.55)
-    $g.DrawLines($ink, [System.Drawing.PointF[]]@(
-        (New-Object System.Drawing.PointF($nL, $bottom)),
-        (New-Object System.Drawing.PointF($nL, $top)),
-        (New-Object System.Drawing.PointF($nR, $bottom)),
-        (New-Object System.Drawing.PointF($nR, $top))
-    ))
-    $g.DrawLines($ink, [System.Drawing.PointF[]]@(
-        (New-Object System.Drawing.PointF($mL, $bottom)),
-        (New-Object System.Drawing.PointF($mL, $top)),
-        (New-Object System.Drawing.PointF($mM, $mid)),
-        (New-Object System.Drawing.PointF($mR, $top)),
-        (New-Object System.Drawing.PointF($mR, $bottom))
-    ))
-    $ink.Dispose()
-
-    $shape.Dispose()
+    $g.CompositingMode = [System.Drawing.Drawing2D.CompositingMode]::SourceCopy
+    $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $g.DrawImage($source, 0, 0, $size, $size)
     $g.Dispose()
     return $bmp
 }
-
 function Get-IconEntryBytes([System.Drawing.Bitmap]$bmp) {
     $w = $bmp.Width
     $h = $bmp.Height
@@ -192,3 +112,5 @@ $fs.Dispose()
 
 Write-Output "Gerado: $icoPath"
 Write-Output "Gerado: $(Join-Path $assets 'neochat.png')"
+
+$source.Dispose()

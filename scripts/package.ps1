@@ -31,6 +31,8 @@ try {
     Copy-Item -LiteralPath (Join-Path $root "README.pt-BR.md") -Destination (Join-Path $dist "README.pt-BR.md") -Force
     Copy-Item -LiteralPath (Join-Path $root "README.fr.md") -Destination (Join-Path $dist "README.fr.md") -Force
     Copy-Item -LiteralPath (Join-Path $root "LICENSE") -Destination (Join-Path $dist "LICENSE") -Force
+    New-Item -ItemType Directory -Path (Join-Path $dist "assets") -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $root "assets\neochat-logo.png") -Destination (Join-Path $dist "assets\neochat-logo.png") -Force
 
     $size = [math]::Round((Get-Item -LiteralPath (Join-Path $dist "NeoChat.exe")).Length / 1MB, 1)
     Write-Host "Pacote gerado em $dist"
