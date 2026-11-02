@@ -234,12 +234,6 @@ fn assistant_bubble(
                         ui.spacing_mut().item_spacing.x = 4.0;
 
                         if !busy {
-                            for (icon, tip) in [
-                                (ActionIcon::ThumbUp, "Avaliação positiva indisponível"),
-                                (ActionIcon::ThumbDown, "Avaliação negativa indisponível"),
-                            ] {
-                                ghost_action_button(ui, colors, false, icon, false).on_hover_text(tip);
-                            }
                             if is_last && ghost_action_button(ui, colors, false, ActionIcon::Regenerate, true)
                                 .on_hover_text("Gerar uma nova resposta").clicked() {
                                 *action = Some(ChatAction::Regenerate);
@@ -285,8 +279,6 @@ fn assistant_bubble(
 enum ActionIcon {
     Copy { done: bool },
     Regenerate,
-    ThumbUp,
-    ThumbDown,
     Play,
 }
 
@@ -316,12 +308,6 @@ fn ghost_action_button(
 
     let ic = rect.center();
     match icon {
-        ActionIcon::ThumbUp | ActionIcon::ThumbDown => {
-            let direction = if matches!(icon, ActionIcon::ThumbUp) { 1.0 } else { -1.0 };
-            let points = [(-5.0, -1.0), (-3.0, -1.0), (-1.0, -5.0), (1.0, -5.0), (1.0, -1.0), (5.0, -1.0), (4.0, 4.0), (-5.0, 4.0), (-5.0, -1.0)];
-            let points = points.into_iter().map(|(x, y)| egui::pos2(ic.x + x, ic.y + y * direction)).collect();
-            ui.painter().add(egui::Shape::line(points, Stroke::new(1.2, fg)));
-        }
         ActionIcon::Play => {
             ui.painter().circle_stroke(ic, 7.0, Stroke::new(1.2, fg));
             ui.painter().add(egui::Shape::closed_line(vec![egui::pos2(ic.x - 2.0, ic.y - 3.5), egui::pos2(ic.x + 4.0, ic.y), egui::pos2(ic.x - 2.0, ic.y + 3.5)], Stroke::new(1.2, fg)));
