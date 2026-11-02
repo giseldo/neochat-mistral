@@ -19,7 +19,7 @@ fn main() -> eframe::Result<()> {
     let store = Store::load();
 
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title("neochat-desktop-mistral")
+        .with_title("NeoChat Mistral")
         .with_inner_size([960.0, 720.0])
         .with_min_inner_size([560.0, 420.0]);
 
@@ -38,7 +38,7 @@ fn main() -> eframe::Result<()> {
     };
 
     eframe::run_native(
-        "neochat-desktop-mistral",
+        "NeoChat Mistral",
         options,
         Box::new(move |cc| Ok(Box::new(NeoChat::new(cc, store)))),
     )

@@ -6,8 +6,15 @@ use egui::{
 };
 use std::collections::BTreeMap;
 
-pub const ACCENT_DARK: Color32 = Color32::from_rgb(0xFF, 0x70, 0x28);
-pub const ACCENT_LIGHT: Color32 = Color32::from_rgb(0xE8, 0x5B, 0x1B);
+// Cores e medidas vêm do design system "Mistral Vibe" (tokens.json).
+// Cada valor abaixo cita o token de origem; troque aqui, não nas telas.
+
+/// `bg-state-brand`, tema escuro (orange-600).
+pub const ACCENT_DARK: Color32 = Color32::from_rgb(0xDE, 0x44, 0x08);
+/// `bg-state-brand`, tema claro (orange-500).
+pub const ACCENT_LIGHT: Color32 = Color32::from_rgb(0xFA, 0x50, 0x0F);
+/// Preenchimento destrutivo com texto branco (red-700, 7:1 com branco).
+pub const DESTRUCTIVE: Color32 = Color32::from_rgb(0xAD, 0x0E, 0x00);
 pub const MAX_CHAT_WIDTH: f32 = 768.0;
 
 pub fn preference(choice: ThemeChoice) -> ThemePreference {
@@ -74,17 +81,93 @@ pub fn install_fonts(ctx: &Context) {
     }
 }
 
-fn tune(style: &mut egui::Style, dark: bool) {
-    style.visuals = if dark {
-        visuals_dark()
+/// Cor de sucesso para texto pequeno: green-800 no claro (green-700 dá só 3,8:1
+/// sobre o creme) e
+/// `text-success` (green-500) no escuro.
+pub fn success_color(dark: bool) -> Color32 {
+    if dark {
+        Color32::from_rgb(0x44, 0xBA, 0x82)
     } else {
-        visuals_light()
-    };
-    style.spacing.item_spacing = Vec2::new(8.0, 8.0);
-    style.spacing.button_padding = Vec2::new(10.0, 6.0);
-    style.spacing.window_margin = Margin::same(18);
+        Color32::from_rgb(0x2B, 0x69, 0x0B)
+    }
+}
+
+/// Os tokens semânticos do design system, resolvidos para um tema.
+struct Palette {
+    bg_default: Color32,
+    bg_subtle: Color32,
+    bg_muted: Color32,
+    bg_sidebar: Color32,
+    text_default: Color32,
+    text_subtle: Color32,
+    text_informative: Color32,
+    text_destructive: Color32,
+    text_warning: Color32,
+    brand: Color32,
+    selection: Color32,
+    border: Color32,
+    border_darker: Color32,
+    soft: Color32,
+    soft_hover: Color32,
+    soft_press: Color32,
+    ghost_hover: Color32,
+}
+
+fn rgba(r: u8, g: u8, b: u8, a: u8) -> Color32 {
+    Color32::from_rgba_unmultiplied(r, g, b, a)
+}
+
+fn palette(dark: bool) -> Palette {
+    if dark {
+        Palette {
+            bg_default: Color32::from_rgb(0x10, 0x10, 0x13), // steel-950
+            bg_subtle: Color32::from_rgb(0x1A, 0x1A, 0x1E),  // steel-900
+            bg_muted: Color32::from_rgb(0x27, 0x27, 0x2B),   // steel-800
+            bg_sidebar: Color32::from_rgb(0x17, 0x17, 0x1B), // steel-925
+            text_default: Color32::from_rgb(0xFF, 0xFF, 0xFF),
+            text_subtle: Color32::from_rgb(0xCC, 0xCC, 0xD1), // steel-300
+            text_informative: Color32::from_rgb(0x55, 0xB3, 0xFB), // blue-400
+            text_destructive: Color32::from_rgb(0xF6, 0x6C, 0x60), // red-400
+            text_warning: Color32::from_rgb(0xFF, 0x65, 0x29), // orange-400
+            brand: ACCENT_DARK,
+            selection: Color32::from_rgb(0x7A, 0x23, 0x00), // orange-900
+            border: rgba(255, 255, 255, 26),                // border-default
+            border_darker: rgba(255, 255, 255, 38),         // border-darker
+            soft: rgba(255, 255, 255, 20),                  // bg-state-soft
+            soft_hover: rgba(255, 255, 255, 26),            // bg-state-soft-hover
+            soft_press: rgba(255, 255, 255, 38),            // bg-state-soft-press
+            ghost_hover: rgba(255, 255, 255, 20),           // bg-state-ghost-hover
+        }
+    } else {
+        Palette {
+            bg_default: Color32::from_rgb(0xFF, 0xFF, 0xFF),
+            bg_subtle: Color32::from_rgb(0xFB, 0xFB, 0xF8), // cream-50
+            bg_muted: Color32::from_rgb(0xF5, 0xF4, 0xEF),  // cream-100
+            bg_sidebar: Color32::from_rgb(0xF8, 0xF7, 0xF3), // cream-25
+            text_default: Color32::from_rgb(0x20, 0x1F, 0x1C), // cream-950
+            text_subtle: Color32::from_rgb(0x61, 0x5F, 0x57), // cream-700
+            text_informative: Color32::from_rgb(0x00, 0x82, 0xE6), // blue-600
+            text_destructive: Color32::from_rgb(0xE5, 0x13, 0x00), // red-600
+            text_warning: Color32::from_rgb(0xDE, 0x44, 0x08), // orange-600
+            brand: ACCENT_LIGHT,
+            selection: Color32::from_rgb(0xFF, 0xDC, 0xCF), // orange-100
+            border: rgba(0, 0, 0, 26),                      // border-default
+            border_darker: rgba(0, 0, 0, 38),               // border-darker
+            soft: rgba(0, 0, 0, 15),                        // bg-state-soft
+            soft_hover: rgba(0, 0, 0, 20),                  // bg-state-soft-hover
+            soft_press: rgba(0, 0, 0, 26),                  // bg-state-soft-press
+            ghost_hover: rgba(0, 0, 0, 10),                 // bg-state-ghost-hover
+        }
+    }
+}
+
+fn tune(style: &mut egui::Style, dark: bool) {
+    style.visuals = visuals(&palette(dark), dark);
+    style.spacing.item_spacing = Vec2::new(8.0, 8.0); // space-2
+    style.spacing.button_padding = Vec2::new(12.0, 7.0);
+    style.spacing.window_margin = Margin::same(16); // space-4
     style.spacing.menu_margin = Margin::same(8);
-    style.spacing.interact_size.y = 30.0;
+    style.spacing.interact_size.y = 32.0; // space-8: altura de controles
     style.spacing.combo_width = 170.0;
     style.spacing.combo_height = 420.0;
     style.spacing.scroll.bar_width = 4.0;
@@ -95,17 +178,20 @@ fn tune(style: &mut egui::Style, dark: bool) {
     style.spacing.scroll.dormant_handle_opacity = 0.55;
     style.spacing.scroll.active_handle_opacity = 0.8;
     style.spacing.scroll.interact_handle_opacity = 1.0;
-    style.animation_time = 0.14;
+    style.animation_time = 0.15; // 150ms, como abas e itens de menu
     style.text_styles = BTreeMap::from([
         (
             TextStyle::Heading,
             FontId::new(20.0, FontFamily::Proportional),
         ),
-        (TextStyle::Body, FontId::new(15.0, FontFamily::Proportional)),
+        // `body`: 16/24
+        (TextStyle::Body, FontId::new(16.0, FontFamily::Proportional)),
+        // `label`: 14/20
         (
             TextStyle::Button,
-            FontId::new(13.5, FontFamily::Proportional),
+            FontId::new(14.0, FontFamily::Proportional),
         ),
+        // `caption`: 12/16
         (
             TextStyle::Small,
             FontId::new(12.0, FontFamily::Proportional),
@@ -117,98 +203,63 @@ fn tune(style: &mut egui::Style, dark: bool) {
     ]);
 }
 
-fn visuals_dark() -> egui::Visuals {
-    let mut v = egui::Visuals::dark();
-    let text = Color32::from_rgb(0xEC, 0xEC, 0xF0);
-    let muted = Color32::from_rgb(0xAC, 0xAC, 0xB8);
-    let border = Color32::from_rgb(0x2A, 0x2A, 0x32);
+fn visuals(p: &Palette, dark: bool) -> egui::Visuals {
+    let mut v = if dark {
+        egui::Visuals::dark()
+    } else {
+        egui::Visuals::light()
+    };
 
-    v.panel_fill = Color32::from_rgb(0x14, 0x14, 0x17);
-    v.window_fill = Color32::from_rgb(0x1B, 0x1B, 0x20);
-    v.extreme_bg_color = Color32::from_rgb(0x18, 0x18, 0x1C);
-    v.faint_bg_color = Color32::from_rgb(0x20, 0x20, 0x26);
-    v.code_bg_color = Color32::from_rgb(0x10, 0x10, 0x13);
-    v.override_text_color = Some(text);
-    v.weak_text_color = Some(muted);
-    v.hyperlink_color = ACCENT_DARK;
-    v.error_fg_color = Color32::from_rgb(0xF8, 0x71, 0x71);
-    v.warn_fg_color = Color32::from_rgb(0xFB, 0xBF, 0x24);
-    v.selection.bg_fill = Color32::from_rgb(0x5C, 0x38, 0x29);
-    v.selection.stroke = Stroke::new(1.0, Color32::WHITE);
-    v.window_corner_radius = CornerRadius::same(12);
-    v.menu_corner_radius = CornerRadius::same(10);
-    v.window_stroke = Stroke::new(1.0, border);
+    v.panel_fill = p.bg_subtle;
+    v.window_fill = p.bg_default;
+    v.extreme_bg_color = p.bg_default;
+    v.faint_bg_color = p.bg_muted;
+    v.code_bg_color = p.bg_muted;
+    v.override_text_color = Some(p.text_default);
+    v.weak_text_color = Some(p.text_subtle);
+    v.hyperlink_color = p.text_informative;
+    v.error_fg_color = p.text_destructive;
+    v.warn_fg_color = p.text_warning;
+    v.selection.bg_fill = p.selection;
+    v.selection.stroke = Stroke::new(1.0, p.text_default);
+    v.window_corner_radius = CornerRadius::same(14); // radius-xl
+    v.menu_corner_radius = CornerRadius::same(10); // radius-lg
+    v.window_stroke = Stroke::new(1.0, p.border);
 
-    widgets(
-        &mut v.widgets,
-        Color32::from_rgb(0x1E, 0x1E, 0x24),
-        Color32::from_rgb(0x26, 0x26, 0x2E),
-        Color32::from_rgb(0x2E, 0x2E, 0x38),
-        border,
-        text,
-    );
-    v.widgets.noninteractive.bg_fill = Color32::from_rgb(0x18, 0x18, 0x1C);
-    v.widgets.noninteractive.weak_bg_fill = Color32::from_rgb(0x18, 0x18, 0x1C);
+    widgets(&mut v.widgets, p);
+    v.widgets.noninteractive.bg_fill = p.bg_subtle;
+    v.widgets.noninteractive.weak_bg_fill = p.bg_subtle;
     v.widgets.noninteractive.bg_stroke = Stroke::NONE;
     v
 }
 
-fn visuals_light() -> egui::Visuals {
-    let mut v = egui::Visuals::light();
-    let text = Color32::from_rgb(0x1A, 0x1A, 0x1E);
-    let muted = Color32::from_rgb(0x8D, 0x8C, 0x85);
-    let border = Color32::from_rgb(0xE2, 0xE1, 0xDE);
-
-    v.panel_fill = Color32::from_rgb(0xFA, 0xFA, 0xF9);
-    v.window_fill = Color32::from_rgb(0xFF, 0xFF, 0xFF);
-    v.extreme_bg_color = Color32::from_rgb(0xFF, 0xFF, 0xFF);
-    v.faint_bg_color = Color32::from_rgb(0xF0, 0xEF, 0xED);
-    v.code_bg_color = Color32::from_rgb(0xF4, 0xF4, 0xF7);
-    v.override_text_color = Some(text);
-    v.weak_text_color = Some(muted);
-    v.hyperlink_color = ACCENT_LIGHT;
-    v.error_fg_color = Color32::from_rgb(0xDC, 0x26, 0x26);
-    v.warn_fg_color = Color32::from_rgb(0xD9, 0x77, 0x06);
-    v.selection.bg_fill = Color32::from_rgb(0xF8, 0xDD, 0xCA);
-    v.selection.stroke = Stroke::new(1.0, text);
-    v.window_corner_radius = CornerRadius::same(12);
-    v.menu_corner_radius = CornerRadius::same(10);
-    v.window_stroke = Stroke::new(1.0, border);
-
-    widgets(
-        &mut v.widgets,
-        Color32::from_rgb(0xF2, 0xF1, 0xEF),
-        Color32::from_rgb(0xE9, 0xE8, 0xE6),
-        Color32::from_rgb(0xE2, 0xE1, 0xDE),
-        border,
-        text,
-    );
-    v.widgets.noninteractive.bg_fill = Color32::from_rgb(0xF7, 0xF7, 0xFA);
-    v.widgets.noninteractive.weak_bg_fill = Color32::from_rgb(0xF7, 0xF7, 0xFA);
-    v.widgets.noninteractive.bg_stroke = Stroke::NONE;
-    v
-}
-
-fn widgets(
-    widgets: &mut egui::style::Widgets,
-    fill: Color32,
-    hover: Color32,
-    active: Color32,
-    border: Color32,
-    text: Color32,
-) {
+fn widgets(widgets: &mut egui::style::Widgets, p: &Palette) {
+    let text = p.text_default;
     let apply = |w: &mut egui::style::WidgetVisuals, bg: Color32, stroke: Stroke| {
         w.bg_fill = bg;
         w.weak_bg_fill = bg;
         w.bg_stroke = stroke;
         w.fg_stroke = Stroke::new(1.0, text);
-        w.corner_radius = CornerRadius::same(8);
+        w.corner_radius = CornerRadius::same(8); // radius-md
     };
 
-    apply(&mut widgets.inactive, fill, Stroke::NONE);
-    apply(&mut widgets.hovered, hover, Stroke::new(1.0, border));
-    apply(&mut widgets.active, active, Stroke::new(1.0, border));
-    apply(&mut widgets.open, hover, Stroke::new(1.0, border));
+    // Botão "suave": bg-state-soft, com hover e pressionado um degrau acima.
+    apply(&mut widgets.inactive, p.soft, Stroke::NONE);
+    apply(
+        &mut widgets.hovered,
+        p.soft_hover,
+        Stroke::new(1.0, p.border_darker),
+    );
+    apply(
+        &mut widgets.active,
+        p.soft_press,
+        Stroke::new(1.0, p.border_darker),
+    );
+    apply(
+        &mut widgets.open,
+        p.soft_hover,
+        Stroke::new(1.0, p.border_darker),
+    );
     widgets.noninteractive.corner_radius = CornerRadius::same(8);
 }
 
@@ -225,42 +276,53 @@ pub struct ChatColors {
     pub assistant_border: Color32,
     pub muted: Color32,
     pub accent: Color32,
+    /// `bg-state-ghost-hover`: fundo de linhas e botões de ícone em hover.
+    pub row_hover: Color32,
+    /// `bg-state-soft`: item de menu ativo.
+    pub row_selected: Color32,
 }
 
 pub fn chat_colors(theme: Theme) -> ChatColors {
-    match theme {
-        Theme::Dark => ChatColors {
-            background: Color32::from_rgb(0x14, 0x14, 0x17),
-            sidebar_bg: Color32::from_rgb(0x10, 0x10, 0x13),
-            surface: Color32::from_rgb(0x1C, 0x1C, 0x21),
-            border: Color32::from_rgb(0x27, 0x27, 0x2F),
-            user_bubble: Color32::from_rgb(0x22, 0x22, 0x29),
-            user_text: Color32::from_rgb(0xF0, 0xF0, 0xF4),
-            assistant_bubble: Color32::from_rgb(0x18, 0x18, 0x1D),
-            assistant_text: Color32::from_rgb(0xEC, 0xEC, 0xF0),
-            assistant_border: Color32::from_rgb(0x25, 0x25, 0x2D),
-            muted: Color32::from_rgb(0xAC, 0xAC, 0xB8),
-            accent: ACCENT_DARK,
-        },
-        Theme::Light => ChatColors {
-            background: Color32::from_rgb(0xFA, 0xFA, 0xF9),
-            sidebar_bg: Color32::from_rgb(0xF7, 0xF6, 0xF3),
-            surface: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-            border: Color32::from_rgb(0xE2, 0xE1, 0xDE),
-            user_bubble: Color32::from_rgb(0xEF, 0xEF, 0xED),
-            user_text: Color32::from_rgb(0x18, 0x18, 0x1C),
-            assistant_bubble: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-            assistant_text: Color32::from_rgb(0x1A, 0x1A, 0x1E),
-            assistant_border: Color32::from_rgb(0xEA, 0xEA, 0xF0),
-            muted: Color32::from_rgb(0x8D, 0x8C, 0x85),
-            accent: ACCENT_LIGHT,
-        },
+    let p = palette(theme == Theme::Dark);
+    ChatColors {
+        background: p.bg_subtle,
+        sidebar_bg: p.bg_sidebar,
+        surface: p.bg_default,
+        border: p.border,
+        user_bubble: p.ghost_hover,
+        user_text: p.text_default,
+        // A resposta do assistente não tem balão no design system.
+        assistant_bubble: Color32::TRANSPARENT,
+        assistant_text: p.text_default,
+        assistant_border: Color32::TRANSPARENT,
+        // `text-subtle`: legível (6:1 ou mais); `text-muted` não passa de 3,2:1 no claro.
+        muted: p.text_subtle,
+        accent: p.brand,
+        row_hover: p.ghost_hover,
+        row_selected: p.soft,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn luminance(c: Color32) -> f32 {
+        let channel = |v: u8| {
+            let v = v as f32 / 255.0;
+            if v <= 0.03928 {
+                v / 12.92
+            } else {
+                ((v + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * channel(c.r()) + 0.7152 * channel(c.g()) + 0.0722 * channel(c.b())
+    }
+
+    fn contrast(a: Color32, b: Color32) -> f32 {
+        let (la, lb) = (luminance(a), luminance(b));
+        (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+    }
 
     #[test]
     fn theme_choice_maps_to_preference() {
@@ -276,5 +338,25 @@ mod tests {
             preference(ThemeChoice::Escuro),
             ThemePreference::Dark
         ));
+    }
+
+    #[test]
+    fn body_text_is_legible_in_both_themes() {
+        for dark in [false, true] {
+            let p = palette(dark);
+            for ground in [p.bg_default, p.bg_subtle, p.bg_sidebar] {
+                assert!(contrast(p.text_default, ground) >= 7.0, "text_default dark={dark}");
+                assert!(contrast(p.text_subtle, ground) >= 4.5, "text_subtle dark={dark}");
+                assert!(
+                    contrast(success_color(dark), ground) >= 4.0,
+                    "success dark={dark}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn destructive_fill_reads_with_white_text() {
+        assert!(contrast(DESTRUCTIVE, Color32::WHITE) >= 4.5);
     }
 }

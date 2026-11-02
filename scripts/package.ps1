@@ -22,11 +22,11 @@ try {
     $dist = Join-Path $root "dist"
     New-Item -ItemType Directory -Path $dist -Force | Out-Null
 
-    Get-Process -Name "NeoChat", "neochat-desktop-mistral" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process -Name "NeoChat", "neochat-desktop-mistral", "NeoChat Mistral" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 300
 
     Copy-Item -LiteralPath $exe -Destination (Join-Path $dist "NeoChat.exe") -Force
-    Copy-Item -LiteralPath $exe -Destination (Join-Path $dist "neochat-desktop-mistral.exe") -Force
+    Copy-Item -LiteralPath $exe -Destination (Join-Path $dist "NeoChat Mistral.exe") -Force
     Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination (Join-Path $dist "README.md") -Force
 
     $size = [math]::Round((Get-Item -LiteralPath (Join-Path $dist "NeoChat.exe")).Length / 1MB, 1)

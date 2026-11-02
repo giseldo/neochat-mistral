@@ -44,7 +44,7 @@ As configurações são organizadas nas abas **Conta**, **Modelo**, **Geração*
 .\scripts\package.ps1
 ```
 
-O script compila em modo release e gera `dist\NeoChat.exe`, uma cópia com o nome `dist\neochat-desktop-mistral.exe` e `dist\README.md`. A pasta pode ser copiada para outro computador Windows compatível; Rust e as ferramentas de compilação não são necessários para executar o pacote.
+O script compila em modo release e gera `dist\NeoChat.exe`, uma cópia com o nome `dist\NeoChat Mistral.exe` e `dist\README.md`. A pasta pode ser copiada para outro computador Windows compatível; Rust e as ferramentas de compilação não são necessários para executar o pacote.
 
 ## Versão de terminal
 

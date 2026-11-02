@@ -181,14 +181,14 @@ fn user_bubble(ui: &mut Ui, colors: &ChatColors, message: &StoredMessage) {
         ui.set_max_width(max);
         Frame::new()
             .fill(colors.user_bubble)
-            .corner_radius(CornerRadius::same(18))
+            .corner_radius(CornerRadius::same(16))
             .inner_margin(Margin::symmetric(16, 10))
             .show(ui, |ui| {
                 ui.add(
                     Label::new(
                         RichText::new(&message.content)
                             .color(colors.user_text)
-                            .size(15.0),
+                            .size(16.0),
                     )
                     .selectable(true)
                     .wrap(),
@@ -287,7 +287,7 @@ fn ghost_action_button(
         ui.painter().rect_filled(
             rect,
             CornerRadius::same(6),
-            colors.border.gamma_multiply(0.55),
+            colors.row_hover,
         );
     }
 

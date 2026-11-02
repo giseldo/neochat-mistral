@@ -1,6 +1,6 @@
 use super::NeoChat;
 use crate::storage::{Language, ThemeChoice, DEFAULT_TEMPERATURE};
-use egui::{Align2, Button, Color32, ComboBox, RichText, Slider, TextEdit, Window};
+use egui::{Align2, Button, ComboBox, RichText, Slider, TextEdit, Window};
 
 pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     if !app.settings_open {
@@ -134,7 +134,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     ui.label(RichText::new(super::i18n::tr("Identificador do modelo selecionado na API")).small().color(ui.visuals().weak_text_color()));
                     if let Some((ok, message)) = &models_status {
                         let color = if *ok {
-                            Color32::from_rgb(0x3F, 0xB9, 0x50)
+                            crate::theme::success_color(ui.visuals().dark_mode)
                         } else {
                             ui.visuals().error_fg_color
                         };
@@ -251,9 +251,11 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                     ui.label(RichText::new(super::i18n::tr("Sobre o NeoChat")).heading());
                     ui.label(format!("Versão {}", env!("CARGO_PKG_VERSION")));
                     ui.label(super::i18n::tr("Desenvolvido por Giseldo"));
+                    ui.label(super::i18n::tr("giseldo@gmail.com"));
+                    ui.label(super::i18n::tr("Licença MIT"));
                     ui.hyperlink_to(
                         super::i18n::tr("Repositório do projeto"),
-                        "https://github.com/giseldo/neochat-desktop-mistral",
+                        "https://github.com/giseldo/neochat-mistral",
                     );
                     ui.label(
                         RichText::new(format!("Dados em {}", crate::storage::data_dir().display()))

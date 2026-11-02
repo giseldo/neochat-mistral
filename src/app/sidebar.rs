@@ -268,18 +268,8 @@ fn row(
     let show_actions = pointer_inside;
 
     if ui.is_rect_visible(rect) {
-        let radius = CornerRadius::same(7);
-        let (hover_bg, selected_bg) = if ui.visuals().dark_mode {
-            (
-                Color32::from_rgb(0x1B, 0x1B, 0x21),
-                Color32::from_rgb(0x22, 0x22, 0x2A),
-            )
-        } else {
-            (
-                Color32::from_rgb(0xEE, 0xED, 0xEB),
-                Color32::from_rgb(0xE8, 0xE7, 0xE5),
-            )
-        };
+        let radius = CornerRadius::same(8);
+        let (hover_bg, selected_bg) = (colors.row_hover, colors.row_selected);
 
         if selected {
             ui.painter().rect_filled(rect, radius, selected_bg);
@@ -476,7 +466,7 @@ pub(super) fn delete_window(app: &mut NeoChat, ctx: &egui::Context) {
                 if ui
                     .add(
                         Button::new(RichText::new(super::i18n::tr("Excluir")).color(Color32::WHITE))
-                            .fill(Color32::from_rgb(0xB3, 0x26, 0x1A)),
+                            .fill(theme::DESTRUCTIVE),
                     )
                     .clicked()
                 {

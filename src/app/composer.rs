@@ -80,7 +80,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
 
                     let card = Frame::new()
                         .fill(colors.surface)
-                        .corner_radius(CornerRadius::same(12))
+                        .corner_radius(CornerRadius::same(14))
                         .inner_margin(Margin::symmetric(16, 10))
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {
@@ -227,7 +227,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
 
                     ui.painter().rect_stroke(
                         card.response.rect,
-                        CornerRadius::same(12),
+                        CornerRadius::same(14),
                         border_stroke,
                         StrokeKind::Inside,
                     );
