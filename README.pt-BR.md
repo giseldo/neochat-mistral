@@ -17,7 +17,7 @@ Cliente desktop para Windows, desenvolvido em Rust, para conversar com modelos d
 - Respostas em streaming, com opção de interromper, copiar ou regenerar.
 - Conversas na barra lateral, com busca por título, criação, renomeação e exclusão.
 - Seleção de modelo na barra superior ou nas configurações, com opção de carregar os modelos disponíveis na API.
-- Ajustes de temperatura, limite de tokens, cache de contexto e tema claro, escuro ou do sistema.
+- Ajustes de prompt de sistema, temperatura, limite de tokens, cache de contexto e tema claro, escuro ou do sistema.
 - Login pela conta Mistral ou uso de chave de API, protegida no Windows com DPAPI.
 - Métricas de geração quando disponíveis.
 
@@ -67,11 +67,12 @@ Ao publicar uma release no GitHub, o GitHub Actions compila e anexa automaticame
 
 ## Dados e privacidade
 
-O aplicativo armazena dados em `%APPDATA%\NeoChat`:
+O aplicativo salva `config.json` na mesma pasta do executável. Ao atualizar, as configurações anteriores em `%APPDATA%\NeoChat` são carregadas se ainda não existir um arquivo ao lado do executável. A pasta do executável precisa permitir gravação.
+
+As conversas e credenciais ficam em `%APPDATA%\NeoChat`:
 
 | Arquivo | Conteúdo |
 | --- | --- |
-| `config.json` | Modelo, tema, parâmetros de geração e preferências |
 | `conversations.json` | Conversas, mensagens e métricas |
 | `secret.dat` | Chave de API criptografada com DPAPI para o usuário atual do Windows |
 

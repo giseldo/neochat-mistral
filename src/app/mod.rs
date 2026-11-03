@@ -15,9 +15,6 @@ use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::sync::Arc;
 use std::time::Instant;
 
-pub const SYSTEM_PROMPT: &str =
-    "Você é o NeoChat, um assistente prestativo, claro e conciso. Responda no idioma do usuário.";
-
 pub enum Event {
     Token(String),
     Thinking(String),
@@ -42,6 +39,7 @@ pub struct NeoChat {
     pub(super) delete_all_confirm: bool,
     pub(super) settings_key: String,
     pub(super) settings_model: String,
+    pub(super) settings_system_prompt: String,
     pub(super) settings_theme: ThemeChoice,
     pub(super) settings_language: Language,
     pub(super) settings_temperature: f32,
@@ -108,6 +106,7 @@ impl NeoChat {
             .unwrap_or_default();
 
         let settings_model = store.config.model.clone();
+        let settings_system_prompt = store.config.system_prompt.clone();
         let settings_theme = store.config.theme;
         let settings_language = store.config.language;
         let settings_temperature = store.config.temperature;
@@ -135,6 +134,7 @@ impl NeoChat {
             delete_all_confirm: false,
             settings_key: String::new(),
             settings_model,
+            settings_system_prompt,
             settings_theme,
             settings_language,
             settings_temperature,
@@ -295,6 +295,7 @@ impl NeoChat {
     pub(super) fn open_settings(&mut self) {
         self.settings_key = self.api_key.clone();
         self.settings_model = self.store.config.model.clone();
+        self.settings_system_prompt = self.store.config.system_prompt.clone();
         self.settings_theme = self.store.config.theme;
         self.settings_language = self.store.config.language;
         self.settings_temperature = self.store.config.temperature;
@@ -460,7 +461,7 @@ impl NeoChat {
             return;
         }
 
-        let mut history = vec![Message::new("system", SYSTEM_PROMPT)];
+        let mut history = vec![Message::new("system", self.store.config.system_prompt.clone())];
         history.extend(conversation.to_api_messages());
 
         let cache_key = if self.store.config.prompt_caching {
@@ -740,6 +741,7 @@ impl NeoChat {
             self.error = Some(format!("Falha ao salvar a chave: {err:#}"));
         }
         self.store.config.model = self.settings_model.clone();
+        self.store.config.system_prompt = self.settings_system_prompt.clone();
         self.store.config.theme = self.settings_theme;
         self.store.config.language = self.settings_language;
         i18n::set_language(self.settings_language);

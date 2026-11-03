@@ -164,6 +164,13 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                         });
                     });
 
+                    ui.add_space(8.0);
+                    ui.label(RichText::new(super::i18n::tr("Prompt de sistema")).strong());
+                    ui.label(RichText::new(super::i18n::tr("Instruções enviadas ao modelo em cada conversa.")).small().color(ui.visuals().weak_text_color()));
+                    ui.add(TextEdit::multiline(&mut app.settings_system_prompt).desired_rows(4).desired_width(f32::INFINITY));
+                    if ui.button(super::i18n::tr("Restaurar prompt padrão")).clicked() {
+                        app.settings_system_prompt = crate::storage::DEFAULT_SYSTEM_PROMPT.to_string();
+                    }
                     ui.add_space(4.0);
                     ui.horizontal(|ui| {
                         ui.label(super::i18n::tr("Temperatura:"));

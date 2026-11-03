@@ -59,10 +59,18 @@ impl Language {
 }
 
 pub const DEFAULT_TEMPERATURE: f32 = 0.7;
+pub const DEFAULT_SYSTEM_PROMPT: &str =
+    "Você é o NeoChat, um assistente prestativo, claro e conciso. Responda no idioma do usuário.";
+
+fn default_system_prompt() -> String {
+    DEFAULT_SYSTEM_PROMPT.to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub model: String,
+    #[serde(default = "default_system_prompt")]
+    pub system_prompt: String,
     #[serde(default)]
     pub theme: ThemeChoice,
     #[serde(default)]
@@ -100,6 +108,7 @@ impl Default for Config {
         let model = std::env::var("MISTRAL_MODEL").unwrap_or_else(|_| MODELS[0].to_string());
         Self {
             model,
+            system_prompt: default_system_prompt(),
             theme: ThemeChoice::Sistema,
             language: Language::default(),
             window_size: None,
@@ -390,7 +399,12 @@ impl Default for Store {
 impl Store {
     pub fn load() -> Self {
         let dir = data_dir();
-        let config = read_json::<Config>(&dir.join(CONFIG_FILE)).unwrap_or_default();
+        let config_path = config_path();
+        let config = if config_path.exists() {
+            read_json::<Config>(&config_path)
+        } else {
+            read_json::<Config>(&dir.join(CONFIG_FILE))
+        }.unwrap_or_default();
         let mut conversations =
             read_json::<Conversations>(&dir.join(CONVERSATIONS_FILE)).unwrap_or_default();
         if conversations.items.is_empty() {
@@ -406,13 +420,21 @@ impl Store {
 
     pub fn save(&self) {
         let dir = data_dir();
-        if let Err(err) = write_json(&dir.join(CONFIG_FILE), &self.config) {
+        if let Err(err) = write_json(&config_path(), &self.config) {
             eprintln!("falha ao salvar configuracoes: {err:#}");
         }
         if let Err(err) = write_json(&dir.join(CONVERSATIONS_FILE), &self.conversations) {
             eprintln!("falha ao salvar conversas: {err:#}");
         }
     }
+}
+
+pub fn config_path() -> PathBuf {
+    std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(Path::to_path_buf))
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(CONFIG_FILE)
 }
 
 pub fn data_dir() -> PathBuf {
@@ -498,6 +520,14 @@ mod tests {
     }
 
     #[test]
+    fn legacy_config_uses_default_system_prompt() {
+        let mut value = serde_json::to_value(Config::default()).unwrap();
+        value.as_object_mut().unwrap().remove("system_prompt");
+        let config: Config = serde_json::from_value(value).unwrap();
+        assert_eq!(config.system_prompt, DEFAULT_SYSTEM_PROMPT);
+    }
+
+    #[test]
     fn clear_all_starts_a_fresh_conversation() {
         let mut conversations = Conversations::default();
         conversations.new_conversation().messages.push(StoredMessage::new("user", "private"));
@@ -515,6 +545,7 @@ mod tests {
     #[test]
     fn config_roundtrip() {
         let config = Config {
+            system_prompt: "Prompt personalizado".to_string(),
             model: "mistral-large-latest".to_string(),
             theme: ThemeChoice::Escuro,
             language: Language::Ingles,
@@ -529,6 +560,7 @@ mod tests {
         let json = serde_json::to_string(&config).unwrap();
         let back: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(back.model, config.model);
+        assert_eq!(back.system_prompt, config.system_prompt);
         assert_eq!(back.theme, ThemeChoice::Escuro);
         assert_eq!(back.language, Language::Ingles);
         assert_eq!(back.window_size, Some([900.0, 700.0]));

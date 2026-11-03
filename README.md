@@ -67,11 +67,12 @@ When a GitHub release is published, GitHub Actions builds and attaches `NeoChat-
 
 ## Data and privacy
 
-The application stores data in `%APPDATA%\NeoChat`:
+The application saves `config.json` next to the executable, including the editable system prompt. When no local config exists, previous settings are loaded from `%APPDATA%\NeoChat`. The executable directory must be writable.
+
+Conversations and credentials are stored in `%APPDATA%\NeoChat`:
 
 | File | Contents |
 | --- | --- |
-| `config.json` | Model, theme, generation parameters and preferences |
 | `conversations.json` | Conversations, messages and metrics |
 | `secret.dat` | API key encrypted with DPAPI for the current Windows user |
 
