@@ -16,6 +16,15 @@ fn load_icon() -> Option<egui::IconData> {
 }
 
 fn main() -> eframe::Result<()> {
+    // No Windows, prioriza DirectX 12 para evitar
+    // problemas com determinados drivers Vulkan.
+    #[cfg(target_os = "windows")]
+    {
+        if std::env::var_os("WGPU_BACKEND").is_none() {
+            std::env::set_var("WGPU_BACKEND", "dx12");
+        }
+    }
+
     let store = Store::load();
 
     let mut viewport = egui::ViewportBuilder::default()
