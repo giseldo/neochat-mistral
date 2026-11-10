@@ -199,11 +199,16 @@ pub struct MistralClient {
 
 impl MistralClient {
     pub fn new(api_key: String, model: String) -> Self {
-        let http = reqwest::Client::builder()
-            .connect_timeout(Duration::from_secs(15))
-            .timeout(Duration::from_secs(180))
-            .build()
-            .unwrap_or_default();
+        // Keep the connection pool alive across messages and model changes.
+        // Credentials remain on each request, never on the shared client.
+        static HTTP: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+        let http = HTTP.get_or_init(|| {
+            reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(15))
+                .timeout(Duration::from_secs(180))
+                .build()
+                .unwrap_or_default()
+        }).clone();
         Self {
             http,
             api_key,

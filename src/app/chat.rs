@@ -1,5 +1,5 @@
 use super::NeoChat;
-use crate::storage::{format_duration_ms, StoredMessage};
+use crate::storage::StoredMessage;
 use crate::theme::{self, ChatColors, MAX_CHAT_WIDTH};
 use egui::{
     Align, Align2, Button, Color32, CornerRadius, Frame, Label, Layout, Margin, RichText, Sense,
@@ -16,13 +16,14 @@ enum ChatAction {
 pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
     let ctx = ui.ctx().clone();
     let colors = theme::chat_colors(ctx.theme());
-    let messages: Vec<StoredMessage> = app
+    let busy = app.busy();
+    // Borrow the history: copying it every frame scales with all conversation text.
+    let messages: &[StoredMessage] = app
         .store
         .conversations
         .active()
-        .map(|conversation| conversation.messages.clone())
+        .map(|conversation| conversation.messages.as_slice())
         .unwrap_or_default();
-    let busy = app.busy();
     let last_assistant = messages.iter().rposition(|m| m.role == "assistant");
     let mut action: Option<ChatAction> = None;
     let mut cache = std::mem::take(&mut app.markdown_cache);
@@ -45,6 +46,7 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
         follow = false;
     }
 
+    let has_messages = !messages.is_empty();
     let panel = egui::CentralPanel::default()
         .frame(
             Frame::new()
@@ -106,16 +108,12 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
                                 } else {
                                     app.partial.as_str()
                                 };
-                                let elapsed_ms = app
-                                    .request_started_at
-                                    .map(|t| t.elapsed().as_millis() as u64);
                                 streaming_bubble(
                                     ui,
                                     &colors,
                                     &mut cache,
                                     app.partial_thinking.as_str(),
                                     text,
-                                    elapsed_ms,
                                     app.streamed_tokens,
                                 );
                             }
@@ -138,7 +136,7 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
     app.follow_output = at_bottom || jump;
     app.jump_to_bottom = false;
 
-    if !at_bottom && !messages.is_empty() {
+    if !at_bottom && has_messages {
         let rect = scroll.inner_rect;
         let pos = egui::pos2(rect.center().x - 18.0, rect.bottom() - 44.0);
         egui::Area::new(egui::Id::unique("jump_to_bottom"))
@@ -365,10 +363,8 @@ fn streaming_bubble(
     cache: &mut CommonMarkCache,
     thinking: &str,
     text: &str,
-    elapsed_ms: Option<u64>,
     streamed_tokens: u32,
 ) {
-    ui.ctx().request_repaint_after(Duration::from_millis(100));
     ui.with_layout(Layout::top_down(Align::Min), |ui| {
         ui.set_max_width(ui.available_width());
         Frame::new()
@@ -379,14 +375,10 @@ fn streaming_bubble(
                     thinking_section(ui, colors, usize::MAX, thinking, true);
                 }
                 if text.is_empty() {
-                    let thinking_label = match elapsed_ms.filter(|&ms| ms >= 200) {
-                        Some(ms) => format!("Pensando... ({})", format_duration_ms(ms)),
-                        None => super::i18n::tr("Pensando...").to_string(),
-                    };
                     ui.horizontal(|ui| {
                         ui.spinner();
                         ui.label(
-                            RichText::new(thinking_label)
+                            RichText::new(super::i18n::tr("Pensando..."))
                                 .size(13.5)
                                 .italics()
                                 .color(colors.muted),
@@ -400,13 +392,6 @@ fn streaming_bubble(
                             live_parts.push("1 token".to_string());
                         } else {
                             live_parts.push(format!("{streamed_tokens} tokens"));
-                        }
-                    }
-                    if let Some(ms) = elapsed_ms.filter(|&ms| ms > 0) {
-                        live_parts.push(format_duration_ms(ms));
-                        if streamed_tokens > 0 && ms >= 200 {
-                            let tps = streamed_tokens as f64 / (ms as f64 / 1000.0);
-                            live_parts.push(format!("{tps:.1} tok/s").replace('.', ","));
                         }
                     }
                     if !live_parts.is_empty() {

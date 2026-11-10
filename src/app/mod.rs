@@ -503,11 +503,11 @@ impl NeoChat {
                     Some(&cancel_task),
                     move |token| {
                         tx_token.send(Event::Token(token.to_string())).ok();
-                        ctx_token.request_repaint();
+                        ctx_token.request_repaint_after(std::time::Duration::from_millis(33));
                     },
                     move |token| {
                         tx_think.send(Event::Thinking(token.to_string())).ok();
-                        ctx_think.request_repaint();
+                        ctx_think.request_repaint_after(std::time::Duration::from_millis(33));
                     },
                 )
                 .await;
