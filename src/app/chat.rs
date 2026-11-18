@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 enum ChatAction {
     Copy(usize, String),
     Regenerate,
+    Edit(usize),
 }
 
 pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
@@ -83,7 +84,7 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
 
                             for (index, message) in messages.iter().enumerate() {
                                 if message.is_user() {
-                                    user_bubble(ui, &colors, message);
+                                    user_bubble(ui, &colors, message, index, busy, &mut action);
                                 } else {
                                     let is_last = Some(index) == last_assistant;
                                     let is_copied = copied_index == Some(index);
@@ -170,29 +171,62 @@ pub(super) fn chat_area(app: &mut NeoChat, ui: &mut Ui) {
             app.copied_feedback = Some((index, Instant::now()));
         }
         Some(ChatAction::Regenerate) => app.regenerate(&ctx),
+        Some(ChatAction::Edit(index)) => app.start_edit(index),
         None => {}
     }
 }
 
-fn user_bubble(ui: &mut Ui, colors: &ChatColors, message: &StoredMessage) {
+fn user_bubble(
+    ui: &mut Ui,
+    colors: &ChatColors,
+    message: &StoredMessage,
+    index: usize,
+    busy: bool,
+    action: &mut Option<ChatAction>,
+) {
     ui.with_layout(Layout::top_down(Align::Max), |ui| {
         let max = (ui.available_width() * 0.76).max(220.0);
         ui.set_max_width(max);
-        Frame::new()
+        let bubble = Frame::new()
             .fill(colors.user_bubble)
             .corner_radius(CornerRadius::same(16))
             .inner_margin(Margin::symmetric(16, 10))
             .show(ui, |ui| {
-                ui.add(
-                    Label::new(
-                        RichText::new(&message.content)
-                            .color(colors.user_text)
-                            .size(16.0),
-                    )
-                    .selectable(true)
-                    .wrap(),
-                );
+                for file in &message.files {
+                    ui.label(RichText::new(format!("📎 {}", file.name)).small().color(colors.user_text));
+                }
+                if !message.images.is_empty() {
+                    ui.label(
+                        RichText::new(format!("🖼 {} {}", message.images.len(), super::i18n::tr("imagem(ns)")))
+                            .small()
+                            .color(colors.user_text),
+                    );
+                }
+                if !message.content.is_empty() {
+                    ui.add(
+                        Label::new(
+                            RichText::new(&message.content)
+                                .color(colors.user_text)
+                                .size(16.0),
+                        )
+                        .selectable(true)
+                        .wrap(),
+                    );
+                }
             });
+        bubble.response.context_menu(|ui| {
+            if ui.button(super::i18n::tr("Copiar")).clicked() {
+                *action = Some(ChatAction::Copy(index, message.content.clone()));
+                ui.close();
+            }
+            if ui
+                .add_enabled(!busy, Button::new(super::i18n::tr("Editar")))
+                .clicked()
+            {
+                *action = Some(ChatAction::Edit(index));
+                ui.close();
+            }
+        });
     });
 }
 
@@ -235,12 +269,11 @@ fn assistant_bubble(
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing.x = 4.0;
 
-                        if !busy {
-                            if ghost_action_button(ui, colors, is_copied, ActionIcon::Copy { done: is_copied }, true)
-                                .on_hover_text(if is_copied { super::i18n::tr("Copiado") } else { super::i18n::tr("Copiar resposta") }).clicked() {
-                                *action = Some(ChatAction::Copy(index, message.content.clone()));
-                            }
-
+                        if !busy
+                            && ghost_action_button(ui, colors, is_copied, ActionIcon::Copy { done: is_copied }, true)
+                                .on_hover_text(if is_copied { super::i18n::tr("Copiado") } else { super::i18n::tr("Copiar resposta") }).clicked()
+                        {
+                            *action = Some(ChatAction::Copy(index, message.content.clone()));
                         }
 
                         if let Some(summary) = metrics_summary {

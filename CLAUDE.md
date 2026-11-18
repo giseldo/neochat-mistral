@@ -9,7 +9,7 @@ Sempre que o usuário pedir uma entrega, faça **commit, push e release** (nesta
 1. Atualize `version` em `Cargo.toml` (patch para correções/refatorações, minor para funcionalidades) e compile.
 2. Commit na `master` (mensagens em português, estilo `feat:`/`fix:`/`refactor:`), crie a tag `vX.Y.Z` e faça `git push origin master vX.Y.Z`.
 3. Crie a release com `gh release create vX.Y.Z --title "NeoChat vX.Y.Z" --notes "..."`.
-4. O executável não é anexado localmente: `.github/workflows/release.yml` roda `cargo build --release` no GitHub Actions ao receber a tag `v*` e anexa `NeoChat.exe` e o `.zip` (leva ~6 min). Confira com `gh run list`.
+4. O executável não é anexado localmente: `.github/workflows/release.yml` roda `cargo build --release` no GitHub Actions quando a release é publicada (`release: published`), em Windows e Linux, e anexa `NeoChat-windows-x86_64.exe`, `NeoChat-linux-x86_64` e o `.zip` (leva ~6 min). Confira com `gh run list`.
 5. Gere também o `dist` local com `.\scripts\package.ps1` (feche o app antes, senão o build falha com "Acesso negado"); `dist\` fica fora do git.
 6. "cargo release" aqui significa `cargo build --release` / `cargo run --release` (não há a ferramenta `cargo-release`); o binário local fica em `target\release\neochat.exe`.
 
@@ -24,7 +24,7 @@ cargo test reasoning_effort_by_model       # um teste específico
 .\scripts\package.ps1                      # gera dist\NeoChat.exe
 ```
 
-Não há lint/CI além do workflow de release.
+`.github/workflows/ci.yml` roda `cargo test` e `cargo clippy -D warnings` (Windows) em push na `master` e PRs, além do workflow de release.
 
 ## Arquitetura
 

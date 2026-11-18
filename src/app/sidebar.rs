@@ -10,6 +10,7 @@ enum RowAction {
     Rename(String),
     Delete(String),
     Favorite(String),
+    Export(String),
 }
 
 /// Ícone do aplicativo (`assets/neochat.png`), decodificado uma vez e guardado na memória do egui.
@@ -182,7 +183,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                         .iter()
                         .filter(|c| {
                             (!c.messages.is_empty() || c.favorite || app.store.conversations.items.len() == 1)
-                                && (search.is_empty() || c.title.to_lowercase().contains(&search))
+                                && c.matches_query(&search)
                         })
                         .map(|conversation| {
                             (
@@ -259,6 +260,7 @@ pub(super) fn sidebar(app: &mut NeoChat, ui: &mut Ui) {
                             }
                             app.store.save();
                         }
+                        Some(RowAction::Export(id)) => app.export_conversation(&id),
                         None => {}
                     }
                 });
@@ -415,6 +417,10 @@ fn row(
         }
         if ui.button(super::i18n::tr("Renomear")).clicked() {
             *action = Some(RowAction::Rename(id.to_string()));
+            ui.close();
+        }
+        if ui.button(super::i18n::tr("Exportar (.md)")).clicked() {
+            *action = Some(RowAction::Export(id.to_string()));
             ui.close();
         }
         if ui.button(super::i18n::tr("Excluir")).clicked() {

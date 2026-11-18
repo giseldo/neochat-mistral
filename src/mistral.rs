@@ -14,6 +14,9 @@ pub struct Message {
     /// Raciocínio da resposta; reenviado como bloco `thinking` para manter a qualidade nos turnos seguintes.
     #[serde(default)]
     pub thinking: Option<String>,
+    /// Imagens anexadas (URLs `data:`); enviadas como blocos `image_url` em mensagens do usuário.
+    #[serde(default)]
+    pub images: Vec<String>,
 }
 
 impl Message {
@@ -22,7 +25,13 @@ impl Message {
             role: role.to_string(),
             content: content.into(),
             thinking: None,
+            images: Vec::new(),
         }
+    }
+
+    pub fn with_images(mut self, images: Vec<String>) -> Self {
+        self.images = images;
+        self
     }
 
     pub fn with_thinking(mut self, thinking: Option<String>) -> Self {
@@ -44,6 +53,15 @@ impl Serialize for Message {
                     { "type": "text", "text": self.content },
                 ]),
             )?,
+            None if self.role == "user" && !self.images.is_empty() => {
+                let mut blocks = vec![serde_json::json!({ "type": "text", "text": self.content })];
+                blocks.extend(
+                    self.images
+                        .iter()
+                        .map(|url| serde_json::json!({ "type": "image_url", "image_url": url })),
+                );
+                state.serialize_field("content", &blocks)?
+            }
             None => state.serialize_field("content", &self.content)?,
         }
         state.end()
@@ -441,6 +459,17 @@ fn friendly_error(status: u16, body: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn user_message_with_images_serializes_blocks() {
+        let msg = Message::new("user", "olhe").with_images(vec!["data:image/png;base64,AAA".into()]);
+        let value = serde_json::to_value(&msg).unwrap();
+        assert_eq!(value["content"][0]["type"], "text");
+        assert_eq!(value["content"][1]["type"], "image_url");
+        assert_eq!(value["content"][1]["image_url"], "data:image/png;base64,AAA");
+        let plain = serde_json::to_value(Message::new("user", "oi")).unwrap();
+        assert_eq!(plain["content"], "oi");
+    }
 
     #[test]
     fn friendly_error_messages() {

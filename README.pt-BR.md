@@ -20,6 +20,8 @@ Cliente desktop para Windows, desenvolvido em Rust, para conversar com modelos d
 - Ajustes de prompt de sistema, temperatura, limite de tokens, cache de contexto e tema claro, escuro ou do sistema.
 - Login pela conta Mistral ou uso de chave de API, protegida pelo DPAPI no Windows ou pelo Secret Service no Linux.
 - Métricas de geração quando disponíveis.
+- Anexos de arquivos de texto e imagens, edição de mensagens enviadas e busca no conteúdo das conversas.
+- Exportação de conversas em Markdown (uma) ou JSON (todas) e importação de JSON.
 
 ## Requisitos para compilar
 

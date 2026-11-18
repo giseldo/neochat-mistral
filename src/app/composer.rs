@@ -69,6 +69,20 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                         ui.add_space(6.0);
                     }
 
+                    if app.editing.is_some() {
+                        ui.horizontal(|ui| {
+                            ui.add(Label::new(
+                                RichText::new(super::i18n::tr("Editando mensagem (as respostas seguintes serão descartadas)"))
+                                    .small()
+                                    .color(colors.muted),
+                            ));
+                            if ui.small_button(super::i18n::tr("Cancelar")).clicked() {
+                                app.cancel_edit();
+                            }
+                        });
+                        ui.add_space(4.0);
+                    }
+
                     let border_color = if has_focus {
                         colors.muted.gamma_multiply(0.55)
                     } else {
@@ -83,15 +97,36 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                         .corner_radius(CornerRadius::same(14))
                         .inner_margin(Margin::symmetric(16, 10))
                         .show(ui, |ui| {
+                            if !app.attachments.is_empty() {
+                                let mut remove = None;
+                                ui.horizontal_wrapped(|ui| {
+                                    for (i, attachment) in app.attachments.iter().enumerate() {
+                                        let label = format!("📎 {} ×", crate::storage::truncate_chars(attachment.name(), 28));
+                                        if ui
+                                            .small_button(label)
+                                            .on_hover_text(super::i18n::tr("Remover anexo"))
+                                            .clicked()
+                                        {
+                                            remove = Some(i);
+                                        }
+                                    }
+                                });
+                                if let Some(i) = remove {
+                                    app.attachments.remove(i);
+                                }
+                                ui.add_space(4.0);
+                            }
                             ui.horizontal(|ui| {
                                 let btn_size = 32.0;
                                 let spacing = ui.spacing().item_spacing.x;
-                                let (plus, plus_response) = ui.allocate_exact_size(egui::vec2(20.0, 32.0), Sense::hover());
+                                let (plus, plus_response) = ui.allocate_exact_size(egui::vec2(20.0, 32.0), Sense::click());
                                 let center = plus.center();
                                 let stroke = Stroke::new(1.4, colors.muted);
                                 ui.painter().line_segment([center + egui::vec2(-6.0, 0.0), center + egui::vec2(6.0, 0.0)], stroke);
                                 ui.painter().line_segment([center + egui::vec2(0.0, -6.0), center + egui::vec2(0.0, 6.0)], stroke);
-                                plus_response.on_hover_text("Anexos indispon\u{00ed}veis");
+                                if plus_response.on_hover_text(super::i18n::tr("Anexar arquivos ou imagens")).clicked() && !app.busy() {
+                                    app.pick_attachments();
+                                }
                                 let show_model = ui.available_width() >= 300.0;
                                 let show_think = show_model
                                     && ui.available_width() >= 400.0
@@ -177,7 +212,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                 }
 
                                 let busy = app.busy();
-                                let has_text = !app.input.trim().is_empty();
+                                let has_text = !app.input.trim().is_empty() || !app.attachments.is_empty();
                                 let enabled = busy || has_text;
 
                                 let sense = if enabled {

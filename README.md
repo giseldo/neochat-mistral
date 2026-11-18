@@ -20,6 +20,8 @@ A Windows desktop client written in Rust for chatting with [Mistral](https://mis
 - Temperature, token limit, context caching and system, light or dark theme settings.
 - Mistral account login or API key authentication, with the key protected by Windows DPAPI or Linux Secret Service.
 - Generation metrics when available.
+- Text-file and image attachments, editing of sent messages, and search inside conversation content.
+- Export conversations to Markdown (one) or JSON (all) and import JSON.
 
 ## Build requirements
 

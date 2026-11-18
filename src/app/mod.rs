@@ -5,7 +5,7 @@ mod settings;
 mod sidebar;
 
 use crate::mistral::{Message, MistralClient, TokenUsage};
-use crate::storage::{ truncate_chars, Store, StoredMessage, ThemeChoice, Language};
+use crate::storage::{safe_file_name, truncate_chars, Attachment, Language, Store, StoredMessage, ThemeChoice};
 use crate::{secrets, theme};
 use eframe::egui;
 use egui::Context;
@@ -66,6 +66,10 @@ pub struct NeoChat {
     pub(super) focus_composer: bool,
     pub(super) sidebar_collapsed: bool,
     pub(super) copied_feedback: Option<(usize, Instant)>,
+    /// Anexos escolhidos para a próxima mensagem.
+    pub(super) attachments: Vec<Attachment>,
+    /// Índice da mensagem do usuário em edição.
+    pub(super) editing: Option<usize>,
 }
 
 impl NeoChat {
@@ -161,6 +165,8 @@ impl NeoChat {
             focus_composer: false,
             sidebar_collapsed: false,
             copied_feedback: None,
+            attachments: Vec::new(),
+            editing: None,
         };
         if app.has_auth() && app.store.config.cached_models.is_empty() {
             app.start_fetch_models(&cc.egui_ctx);
@@ -330,6 +336,8 @@ impl NeoChat {
             self.store.conversations.new_conversation();
         }
         self.input.clear();
+        self.attachments.clear();
+        self.editing = None;
         self.partial.clear();
         self.partial_thinking.clear();
         self.error = None;
@@ -352,6 +360,8 @@ impl NeoChat {
             .items
             .retain(|c| !c.messages.is_empty() || c.id == target_id);
         self.store.conversations.active = Some(target_id);
+        self.attachments.clear();
+        self.editing = None;
         self.partial.clear();
         self.partial_thinking.clear();
         self.error = None;
@@ -420,9 +430,114 @@ impl NeoChat {
         self.save();
     }
 
+    /// Abre o seletor e adiciona arquivos de texto ou imagens à próxima mensagem.
+    pub(super) fn pick_attachments(&mut self) {
+        let Some(paths) = rfd::FileDialog::new().set_title("Anexar arquivos").pick_files() else {
+            return;
+        };
+        for path in paths {
+            match Attachment::from_path(&path) {
+                Ok(attachment) => self.attachments.push(attachment),
+                Err(err) => self.error = Some(format!("{err:#}")),
+            }
+        }
+    }
+
+    /// Carrega o texto da mensagem do usuário no compositor; o envio substitui a mensagem e as seguintes.
+    pub(super) fn start_edit(&mut self, index: usize) {
+        if self.busy() {
+            return;
+        }
+        let Some(message) = self
+            .store
+            .conversations
+            .active()
+            .and_then(|c| c.messages.get(index))
+            .filter(|m| m.is_user())
+        else {
+            return;
+        };
+        self.input = message.content.clone();
+        self.attachments.clear();
+        let files = message.files.clone();
+        let images = message.images.clone();
+        for file in files {
+            self.attachments.push(Attachment::Text(file));
+        }
+        for (n, data_url) in images.into_iter().enumerate() {
+            self.attachments.push(Attachment::Image { name: format!("imagem {}", n + 1), data_url });
+        }
+        self.editing = Some(index);
+        self.focus_composer = true;
+    }
+
+    pub(super) fn cancel_edit(&mut self) {
+        self.editing = None;
+        self.input.clear();
+        self.attachments.clear();
+    }
+
+    pub(super) fn export_conversation(&mut self, id: &str) {
+        let Some(conversation) = self.store.conversations.items.iter().find(|c| c.id == id) else {
+            return;
+        };
+        let name = format!("{}.md", safe_file_name(&conversation.title));
+        let markdown = conversation.to_markdown();
+        let Some(path) = rfd::FileDialog::new()
+            .set_title("Exportar conversa")
+            .set_file_name(name)
+            .add_filter("Markdown", &["md"])
+            .save_file()
+        else {
+            return;
+        };
+        match std::fs::write(&path, markdown) {
+            Ok(()) => self.status = Some(format!("Conversa exportada para {}", path.display())),
+            Err(err) => self.error = Some(format!("Falha ao exportar: {err}")),
+        }
+    }
+
+    pub(super) fn export_all(&mut self) {
+        let Some(path) = rfd::FileDialog::new()
+            .set_title("Exportar conversas")
+            .set_file_name("neochat-conversas.json")
+            .add_filter("JSON", &["json"])
+            .save_file()
+        else {
+            return;
+        };
+        let result = serde_json::to_string_pretty(&self.store.conversations)
+            .map_err(|e| e.to_string())
+            .and_then(|json| std::fs::write(&path, json).map_err(|e| e.to_string()));
+        match result {
+            Ok(()) => self.status = Some(format!("Conversas exportadas para {}", path.display())),
+            Err(err) => self.error = Some(format!("Falha ao exportar: {err}")),
+        }
+    }
+
+    pub(super) fn import_conversations(&mut self) {
+        let Some(path) = rfd::FileDialog::new()
+            .set_title("Importar conversas")
+            .add_filter("JSON", &["json"])
+            .pick_file()
+        else {
+            return;
+        };
+        let result = std::fs::read_to_string(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|text| self.store.conversations.import_json(&text).map_err(|e| format!("{e:#}")));
+        match result {
+            Ok(count) => {
+                self.save();
+                self.status = Some(format!("{count} conversa(s) importada(s)."));
+            }
+            Err(err) => self.error = Some(format!("Falha ao importar: {err}")),
+        }
+    }
+
     pub(super) fn send(&mut self, ctx: &Context) {
         let text = self.input.trim().to_string();
-        if text.is_empty() || self.busy() {
+        if (text.is_empty() && self.attachments.is_empty()) || self.busy() {
             return;
         }
         if !self.has_auth() {
@@ -444,8 +559,19 @@ impl NeoChat {
         self.focus_composer = true;
 
         self.ensure_active();
+        let mut message = StoredMessage::new("user", text);
+        for attachment in std::mem::take(&mut self.attachments) {
+            match attachment {
+                Attachment::Image { data_url, .. } => message.images.push(data_url),
+                Attachment::Text(file) => message.files.push(file),
+            }
+        }
+        let editing = self.editing.take();
         if let Some(conversation) = self.store.conversations.active_mut() {
-            conversation.messages.push(StoredMessage::new("user", text));
+            if let Some(index) = editing {
+                conversation.messages.truncate(index);
+            }
+            conversation.messages.push(message);
             conversation.touch();
             conversation.ensure_title();
         }

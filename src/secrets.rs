@@ -149,7 +149,7 @@ pub fn load_api_key() -> Option<String> {
     {
         let bytes = fs::read(secret_path()).ok()?;
         let plain = unprotect(&bytes).ok()?;
-        return normalize_secret(std::str::from_utf8(&plain).ok()?);
+        normalize_secret(std::str::from_utf8(&plain).ok()?)
     }
 
     #[cfg(unix)]

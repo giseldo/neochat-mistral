@@ -142,6 +142,67 @@ pub struct StoredMessage {
     pub cached_tokens: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub thinking: Option<String>,
+    /// Imagens anexadas (URLs `data:`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<String>,
+    /// Arquivos de texto anexados.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub files: Vec<StoredFile>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StoredFile {
+    pub name: String,
+    pub text: String,
+}
+
+/// Limite de tamanho de um anexo (em bytes).
+pub const MAX_ATTACHMENT_BYTES: u64 = 5 * 1024 * 1024;
+
+/// Lê um arquivo e devolve `(nome, Imagem(data URL) | Texto)`.
+pub enum Attachment {
+    Image { name: String, data_url: String },
+    Text(StoredFile),
+}
+
+impl Attachment {
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Image { name, .. } => name,
+            Self::Text(file) => &file.name,
+        }
+    }
+
+    pub fn from_path(path: &Path) -> anyhow::Result<Self> {
+        use base64::Engine;
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "arquivo".to_string());
+        let size = fs::metadata(path)?.len();
+        if size > MAX_ATTACHMENT_BYTES {
+            anyhow::bail!("{name}: arquivo maior que 5 MB");
+        }
+        let bytes = fs::read(path)?;
+        let ext = path
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        let mime = match ext.as_str() {
+            "png" => Some("image/png"),
+            "jpg" | "jpeg" => Some("image/jpeg"),
+            "webp" => Some("image/webp"),
+            "gif" => Some("image/gif"),
+            _ => None,
+        };
+        if let Some(mime) = mime {
+            let data = base64::engine::general_purpose::STANDARD.encode(&bytes);
+            return Ok(Self::Image { name, data_url: format!("data:{mime};base64,{data}") });
+        }
+        let text = String::from_utf8(bytes)
+            .map_err(|_| anyhow::anyhow!("{name}: não é um arquivo de texto nem uma imagem suportada"))?;
+        Ok(Self::Text(StoredFile { name, text }))
+    }
 }
 
 impl StoredMessage {
@@ -157,11 +218,24 @@ impl StoredMessage {
             total_tokens: None,
             cached_tokens: None,
             thinking: None,
+            images: Vec::new(),
+            files: Vec::new(),
         }
     }
 
+    /// Texto enviado à API: o conteúdo seguido dos arquivos de texto anexados.
+    pub fn api_content(&self) -> String {
+        let mut text = self.content.clone();
+        for file in &self.files {
+            text.push_str(&format!("\n\n[Arquivo: {}]\n```\n{}\n```", file.name, file.text));
+        }
+        text
+    }
+
     pub fn to_api(&self) -> Message {
-        Message::new(&self.role, self.content.clone()).with_thinking(self.thinking.clone())
+        Message::new(&self.role, self.api_content())
+            .with_thinking(self.thinking.clone())
+            .with_images(self.images.clone())
     }
 
     pub fn is_user(&self) -> bool {
@@ -318,6 +392,36 @@ impl Conversation {
     pub fn to_api_messages(&self) -> Vec<Message> {
         self.messages.iter().map(StoredMessage::to_api).collect()
     }
+
+    /// Verdadeiro se o título ou o conteúdo de alguma mensagem contém `query` (já em minúsculas).
+    pub fn matches_query(&self, query: &str) -> bool {
+        query.is_empty()
+            || self.title.to_lowercase().contains(query)
+            || self
+                .messages
+                .iter()
+                .any(|m| m.content.to_lowercase().contains(query))
+    }
+
+    /// Exporta a conversa como Markdown legível.
+    pub fn to_markdown(&self) -> String {
+        let mut out = format!("# {}\n\n", self.title.trim());
+        for message in &self.messages {
+            let who = if message.is_user() { "Você" } else { "Assistente" };
+            out.push_str(&format!("## {who}\n\n{}\n\n", message.content.trim()));
+        }
+        out
+    }
+}
+
+/// Nome de arquivo seguro derivado de um título.
+pub fn safe_file_name(title: &str) -> String {
+    let cleaned: String = title
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' { c } else { '_' })
+        .collect();
+    let cleaned = cleaned.trim();
+    if cleaned.is_empty() { "conversa".to_string() } else { truncate_chars(cleaned, 60) }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -370,6 +474,33 @@ impl Conversations {
         self.items.clear();
         self.active = Some(fresh.id.clone());
         self.items.push(fresh);
+    }
+
+    /// Mescla conversas importadas (JSON de `Conversations` ou de uma única `Conversation`).
+    /// Conversas com id já existente recebem um id novo. Devolve quantas foram adicionadas.
+    pub fn import_json(&mut self, text: &str) -> anyhow::Result<usize> {
+        let incoming: Vec<Conversation> = if let Ok(all) = serde_json::from_str::<Conversations>(text) {
+            all.items
+        } else {
+            vec![serde_json::from_str::<Conversation>(text)
+                .map_err(|_| anyhow::anyhow!("arquivo de conversas inválido"))?]
+        };
+        let mut added = 0;
+        for mut conversation in incoming {
+            if conversation.messages.is_empty() {
+                continue;
+            }
+            if conversation.id.is_empty() || self.index_of(&conversation.id).is_some() {
+                conversation.id = new_id();
+            }
+            while self.index_of(&conversation.id).is_some() {
+                conversation.id.push('i');
+            }
+            conversation.ensure_title();
+            self.items.push(conversation);
+            added += 1;
+        }
+        Ok(added)
     }
 
     pub fn remove(&mut self, id: &str) {
@@ -645,6 +776,78 @@ mod tests {
         conversations.remove(&second);
         assert_eq!(conversations.active.as_deref(), Some(first.as_str()));
         assert_eq!(conversations.items.len(), 1);
+    }
+
+    #[test]
+    fn attachments_are_sent_to_the_api() {
+        let dir = std::env::temp_dir().join(format!("neochat-test-{}", now()));
+        fs::create_dir_all(&dir).unwrap();
+        let txt = dir.join("nota.txt");
+        fs::write(&txt, "conteudo").unwrap();
+        let png = dir.join("foto.png");
+        fs::write(&png, [137, 80, 78, 71]).unwrap();
+        let bin = dir.join("x.bin");
+        fs::write(&bin, [0xff, 0xfe, 0x00]).unwrap();
+
+        let mut msg = StoredMessage::new("user", "veja");
+        match Attachment::from_path(&txt).unwrap() {
+            Attachment::Text(f) => msg.files.push(f),
+            _ => panic!("esperava texto"),
+        }
+        match Attachment::from_path(&png).unwrap() {
+            Attachment::Image { data_url, .. } => msg.images.push(data_url),
+            _ => panic!("esperava imagem"),
+        }
+        assert!(Attachment::from_path(&bin).is_err());
+        let api = msg.to_api();
+        assert!(api.content.contains("[Arquivo: nota.txt]"));
+        assert!(api.content.contains("conteudo"));
+        assert!(api.images[0].starts_with("data:image/png;base64,"));
+        let back: StoredMessage = serde_json::from_str(&serde_json::to_string(&msg).unwrap()).unwrap();
+        assert_eq!(back.files, msg.files);
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn search_matches_title_and_message_content() {
+        let mut c = Conversation::new("c1");
+        c.title = "Receitas".to_string();
+        c.messages.push(StoredMessage::new("user", "Como fazer BOLO de cenoura?"));
+        assert!(c.matches_query(""));
+        assert!(c.matches_query("receitas"));
+        assert!(c.matches_query("bolo"));
+        assert!(!c.matches_query("pizza"));
+    }
+
+    #[test]
+    fn markdown_export_lists_roles() {
+        let mut c = Conversation::new("c1");
+        c.title = "Teste".to_string();
+        c.messages.push(StoredMessage::new("user", "oi"));
+        c.messages.push(StoredMessage::new("assistant", "olá"));
+        let md = c.to_markdown();
+        assert!(md.starts_with("# Teste"));
+        assert!(md.contains("## Você\n\noi"));
+        assert!(md.contains("## Assistente\n\nolá"));
+        assert_eq!(safe_file_name("a/b:c?"), "a_b_c_");
+        assert_eq!(safe_file_name("  "), "conversa");
+    }
+
+    #[test]
+    fn import_merges_and_avoids_id_clashes() {
+        let mut source = Conversations::default();
+        source.new_conversation().messages.push(StoredMessage::new("user", "um"));
+        let json = serde_json::to_string(&source).unwrap();
+
+        let mut target = source.clone();
+        assert_eq!(target.import_json(&json).unwrap(), 1);
+        assert_eq!(target.items.len(), 2);
+        assert_ne!(target.items[0].id, target.items[1].id);
+
+        let single = serde_json::to_string(&source.items[0]).unwrap();
+        assert_eq!(target.import_json(&single).unwrap(), 1);
+        assert_eq!(target.items.len(), 3);
+        assert!(target.import_json("nao e json").is_err());
     }
 
     #[test]
