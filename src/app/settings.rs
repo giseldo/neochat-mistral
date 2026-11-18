@@ -250,6 +250,15 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
                         ui.label(RichText::new(super::i18n::tr("Conversas")).heading());
                         ui.label(super::i18n::tr("Exclua todo o histórico de conversas deste dispositivo."));
                         ui.add_space(10.0);
+                        ui.horizontal(|ui| {
+                            if ui.button(super::i18n::tr("Exportar todas (.json)")).clicked() {
+                                app.export_all();
+                            }
+                            if ui.button(super::i18n::tr("Importar conversas (.json)")).clicked() {
+                                app.import_conversations();
+                            }
+                        });
+                        ui.add_space(10.0);
                         if ui.button(super::i18n::tr("Excluir todas as conversas")).clicked() {
                             app.delete_all_confirm = true;
                         }

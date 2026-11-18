@@ -99,6 +99,14 @@ pub fn tr(text: &'static str) -> &'static str {
         "Obtenha respostas rápidas" => if language == 1 { "Get quick answers" } else { "Obtenez des réponses rapides" },
         "Lide com tarefas complexas" => if language == 1 { "Handle complex tasks" } else { "Gérez des tâches complexes" },
         "Raciocínio" => if language == 1 { "Reasoning" } else { "Raisonnement" },
+        "Editando mensagem (as respostas seguintes serão descartadas)" => if language == 1 { "Editing message (following replies will be discarded)" } else { "Modification du message (les réponses suivantes seront supprimées)" },
+        "Remover anexo" => if language == 1 { "Remove attachment" } else { "Retirer la pièce jointe" },
+        "Anexar arquivos ou imagens" => if language == 1 { "Attach files or images" } else { "Joindre des fichiers ou des images" },
+        "imagem(ns)" => "image(s)",
+        "Editar" => if language == 1 { "Edit" } else { "Modifier" },
+        "Exportar (.md)" => if language == 1 { "Export (.md)" } else { "Exporter (.md)" },
+        "Exportar todas (.json)" => if language == 1 { "Export all (.json)" } else { "Tout exporter (.json)" },
+        "Importar conversas (.json)" => if language == 1 { "Import chats (.json)" } else { "Importer des conversations (.json)" },
         _ => text,
     }
 }

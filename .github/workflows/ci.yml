@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    name: Test on windows-latest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Update Rust stable
+        run: rustup update stable && rustup default stable && rustup component add clippy
+      - name: Tests
+        run: cargo test --all-targets --locked
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings

@@ -20,6 +20,8 @@ Client de bureau Windows écrit en Rust pour discuter avec les modèles de [Mist
 - Réglage de la température, de la limite de tokens, du cache de contexte et du thème clair, sombre ou système.
 - Connexion avec un compte Mistral ou une clé API, protégée par DPAPI sous Windows.
 - Métriques de génération lorsqu'elles sont disponibles.
+- Pièces jointes (fichiers texte et images), modification des messages envoyés et recherche dans le contenu des conversations.
+- Export des conversations en Markdown (une) ou JSON (toutes) et import JSON.
 
 ## Prérequis de compilation
 
