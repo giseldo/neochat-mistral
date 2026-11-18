@@ -1,6 +1,6 @@
 [package]
 name = "neochat"
-version = "0.2.8"
+version = "0.2.9"
 edition = "2021"
 description = "Chatbot de desktop para Windows que conversa com um LLM da Mistral"
 license = "MIT"
@@ -26,3 +26,6 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std", "io-
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Security_Cryptography", "Win32_Foundation"] }
+
+[target.'cfg(unix)'.dependencies]
+keyring = { version = "4.2", default-features = true }

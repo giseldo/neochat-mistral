@@ -18,7 +18,7 @@ A Windows desktop client written in Rust for chatting with [Mistral](https://mis
 - Sidebar conversation management, including title search, creation, renaming and deletion.
 - Model selection in the top bar or settings, with an option to load models available from the API.
 - Temperature, token limit, context caching and system, light or dark theme settings.
-- Mistral account login or API key authentication, with the key protected by Windows DPAPI.
+- Mistral account login or API key authentication, with the key protected by Windows DPAPI or Linux Secret Service.
 - Generation metrics when available.
 
 ## Build requirements
@@ -52,7 +52,7 @@ Settings are organized into Account, Model, Generation, Appearance and About tab
 
 The script builds the release and creates `dist\NeoChat.exe`, a copy named `dist\NeoChat Mistral.exe`, `dist\README.md`, and `dist\LICENSE`. The folder can be copied to another compatible Windows computer; Rust and build tools are not needed to run the package.
 
-When a GitHub release is published, GitHub Actions builds and attaches `NeoChat-windows-x86_64.exe` and `NeoChat-linux-x86_64`. On Linux, make the binary executable with `chmod +x NeoChat-linux-x86_64`. The Linux binary requires system graphics libraries; API keys saved on disk are not encrypted on Linux.
+When a GitHub release is published, GitHub Actions builds and attaches `NeoChat-windows-x86_64.exe` and `NeoChat-linux-x86_64`. On Linux, make the binary executable with `chmod +x NeoChat-linux-x86_64`. The Linux binary requires system graphics libraries; API keys are stored in the user's Secret Service credential store, with no plaintext copy on disk.
 
 ## Keyboard shortcuts
 
@@ -74,7 +74,7 @@ Conversations and credentials are stored in `%APPDATA%\NeoChat`:
 | File | Contents |
 | --- | --- |
 | `conversations.json` | Conversations, messages and metrics |
-| `secret.dat` | API key encrypted with DPAPI for the current Windows user |
+| `secret.dat` | Legacy Linux API-key file migrated to Secret Service; on Windows, API key protected with DPAPI |
 
 Messages you send are transmitted to the Mistral API. Login and model loading also communicate with Mistral services.
 

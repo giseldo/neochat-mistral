@@ -18,7 +18,7 @@ Client de bureau Windows écrit en Rust pour discuter avec les modèles de [Mist
 - Gestion des conversations dans la barre latérale : recherche par titre, création, renommage et suppression.
 - Sélection du modèle dans la barre supérieure ou les paramètres, avec chargement des modèles disponibles via l'API.
 - Réglage de la température, de la limite de tokens, du cache de contexte et du thème clair, sombre ou système.
-- Connexion avec un compte Mistral ou une clé API, protégée par DPAPI sous Windows.
+- Connexion avec un compte Mistral ou une clé API, protégée par DPAPI sous Windows ou Secret Service sous Linux.
 - Métriques de génération lorsqu'elles sont disponibles.
 
 ## Prérequis de compilation
@@ -52,7 +52,7 @@ Les paramètres sont organisés en onglets : compte, modèle, génération, appa
 
 Le script compile la version release et crée `dist\NeoChat.exe`, une copie nommée `dist\NeoChat Mistral.exe`, les fichiers README et `dist\LICENSE`. Le dossier peut être copié sur un autre ordinateur Windows compatible, sans installer Rust ni les outils de compilation.
 
-Lorsqu'une release est publiée sur GitHub, GitHub Actions compile et joint `NeoChat-windows-x86_64.exe` et `NeoChat-linux-x86_64`. Sous Linux, rendez le binaire exécutable avec `chmod +x NeoChat-linux-x86_64`. Le binaire Linux dépend des bibliothèques graphiques du système ; la clé API enregistrée sur le disque n'est pas chiffrée sous Linux.
+Lorsqu'une release est publiée sur GitHub, GitHub Actions compile et joint `NeoChat-windows-x86_64.exe` et `NeoChat-linux-x86_64`. Sous Linux, rendez le binaire exécutable avec `chmod +x NeoChat-linux-x86_64`. Le binaire Linux dépend des bibliothèques graphiques du système ; la clé API est stockée dans le Secret Service de l'utilisateur, sans copie en clair sur le disque.
 
 ## Raccourcis clavier
 
@@ -74,7 +74,7 @@ Les conversations et les identifiants sont stockés dans `%APPDATA%\NeoChat` :
 | Fichier | Contenu |
 | --- | --- |
 | `conversations.json` | Conversations, messages et métriques |
-| `secret.dat` | Clé API chiffrée avec DPAPI pour l'utilisateur Windows actuel |
+| `secret.dat` | Ancien fichier Linux migré vers Secret Service ; sous Windows, clé API protégée par DPAPI |
 
 Les messages sont transmis à l'API de Mistral. La connexion et le chargement des modèles communiquent également avec les services de Mistral.
 

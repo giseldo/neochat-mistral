@@ -18,7 +18,7 @@ Cliente desktop para Windows, desenvolvido em Rust, para conversar com modelos d
 - Conversas na barra lateral, com busca por título, criação, renomeação e exclusão.
 - Seleção de modelo na barra superior ou nas configurações, com opção de carregar os modelos disponíveis na API.
 - Ajustes de prompt de sistema, temperatura, limite de tokens, cache de contexto e tema claro, escuro ou do sistema.
-- Login pela conta Mistral ou uso de chave de API, protegida no Windows com DPAPI.
+- Login pela conta Mistral ou uso de chave de API, protegida pelo DPAPI no Windows ou pelo Secret Service no Linux.
 - Métricas de geração quando disponíveis.
 
 ## Requisitos para compilar
@@ -52,7 +52,7 @@ As configurações são organizadas nas abas **Conta**, **Modelo**, **Geração*
 
 O script compila em modo release e gera `dist\NeoChat.exe`, uma cópia com o nome `dist\NeoChat Mistral.exe`, `dist\README.md` e `dist\LICENSE`. A pasta pode ser copiada para outro computador Windows compatível; Rust e as ferramentas de compilação não são necessários para executar o pacote.
 
-Ao publicar uma release no GitHub, o GitHub Actions compila e anexa automaticamente `NeoChat-windows-x86_64.exe` e `NeoChat-linux-x86_64`. No Linux, dê permissão de execução com `chmod +x NeoChat-linux-x86_64`. O binário Linux depende das bibliotecas gráficas do sistema; a chave de API salva em disco não é criptografada nessa plataforma.
+Ao publicar uma release no GitHub, o GitHub Actions compila e anexa automaticamente `NeoChat-windows-x86_64.exe` e `NeoChat-linux-x86_64`. No Linux, dê permissão de execução com `chmod +x NeoChat-linux-x86_64`. O binário Linux depende das bibliotecas gráficas do sistema; a chave de API é armazenada no Secret Service do usuário, sem uma cópia em texto no disco.
 
 ## Atalhos
 
@@ -74,7 +74,7 @@ As conversas e credenciais ficam em `%APPDATA%\NeoChat`:
 | Arquivo | Conteúdo |
 | --- | --- |
 | `conversations.json` | Conversas, mensagens e métricas |
-| `secret.dat` | Chave de API criptografada com DPAPI para o usuário atual do Windows |
+| `secret.dat` | Arquivo legado da chave no Linux, migrado para o Secret Service; no Windows, chave protegida com DPAPI |
 
 As mensagens enviadas são transmitidas à API da Mistral. O login e o carregamento de modelos também se comunicam com serviços da Mistral.
 
