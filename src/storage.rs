@@ -329,6 +329,9 @@ pub struct Conversation {
     pub updated_at: i64,
     #[serde(default)]
     pub favorite: bool,
+    /// Ids das skills ativas nesta conversa.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub skills: Vec<String>,
     #[serde(default)]
     pub messages: Vec<StoredMessage>,
 }
@@ -342,6 +345,7 @@ impl Conversation {
             created_at: created,
             updated_at: created,
             favorite: false,
+            skills: Vec::new(),
             messages: Vec::new(),
         }
     }

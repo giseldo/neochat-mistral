@@ -97,6 +97,43 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                         .corner_radius(CornerRadius::same(14))
                         .inner_margin(Margin::symmetric(16, 10))
                         .show(ui, |ui| {
+                            {
+                                let active: Vec<String> = app
+                                    .store
+                                    .conversations
+                                    .active()
+                                    .map(|c| c.skills.clone())
+                                    .unwrap_or_default();
+                                let mut deactivate = None;
+                                ui.horizontal_wrapped(|ui| {
+                                    let label = if active.is_empty() {
+                                        format!("✦ {}", super::i18n::tr("Skills"))
+                                    } else {
+                                        format!("✦ {} ({})", super::i18n::tr("Skills"), active.len())
+                                    };
+                                    if ui
+                                        .small_button(label)
+                                        .on_hover_text(super::i18n::tr("Ativar skills nesta conversa"))
+                                        .clicked()
+                                    {
+                                        app.skills_open = !app.skills_open;
+                                    }
+                                    for id in &active {
+                                        let title = crate::skills::find(id).map(|s| s.title.as_str()).unwrap_or(id);
+                                        if ui
+                                            .small_button(format!("{} ×", crate::storage::truncate_chars(title, 24)))
+                                            .on_hover_text(super::i18n::tr("Desativar skill"))
+                                            .clicked()
+                                        {
+                                            deactivate = Some(id.clone());
+                                        }
+                                    }
+                                });
+                                if let Some(id) = deactivate {
+                                    app.toggle_skill(&id);
+                                }
+                                ui.add_space(4.0);
+                            }
                             if !app.attachments.is_empty() {
                                 let mut remove = None;
                                 ui.horizontal_wrapped(|ui| {

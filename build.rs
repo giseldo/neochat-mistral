@@ -1,7 +1,32 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Gera `skills_index.rs` com todos os `skills/*.json` embutidos no binário.
+fn generate_skills_index() {
+    let manifest_dir =
+        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR"));
+    println!("cargo:rerun-if-changed=skills");
+    let mut files: Vec<PathBuf> = std::fs::read_dir(manifest_dir.join("skills"))
+        .map(|entries| {
+            entries
+                .filter_map(|e| e.ok().map(|e| e.path()))
+                .filter(|p| p.extension().is_some_and(|ext| ext == "json"))
+                .collect()
+        })
+        .unwrap_or_default();
+    files.sort();
+    let mut code = String::from("pub const EMBEDDED_SKILLS: &[&str] = &[\n");
+    for file in &files {
+        let path = file.to_string_lossy().replace('\\', "/");
+        code.push_str(&format!("    include_str!(\"{path}\"),\n"));
+    }
+    code.push_str("];\n");
+    std::fs::write(out_dir.join("skills_index.rs"), code).expect("falha ao gerar skills_index.rs");
+}
+
 fn main() {
+    generate_skills_index();
     println!("cargo:rerun-if-changed=assets/neochat.ico");
     println!("cargo:rerun-if-changed=assets/app.manifest");
     println!("cargo:rerun-if-changed=assets/neochat.png");

@@ -107,6 +107,13 @@ pub fn tr(text: &'static str) -> &'static str {
         "Exportar (.md)" => if language == 1 { "Export (.md)" } else { "Exporter (.md)" },
         "Exportar todas (.json)" => if language == 1 { "Export all (.json)" } else { "Tout exporter (.json)" },
         "Importar conversas (.json)" => if language == 1 { "Import chats (.json)" } else { "Importer des conversations (.json)" },
+        "Ativar skills nesta conversa" => if language == 1 { "Enable skills in this chat" } else { "Activer des skills dans cette conversation" },
+        "Desativar skill" => if language == 1 { "Disable skill" } else { "Désactiver la skill" },
+        "Buscar skills" => if language == 1 { "Search skills" } else { "Rechercher des skills" },
+        "Todas" => if language == 1 { "All" } else { "Toutes" },
+        "Instruções de texto que o modelo aplica nesta conversa (máx. 4)." => if language == 1 { "Text instructions the model applies in this chat (max 4)." } else { "Instructions texte appliquées par le modèle dans cette conversation (max 4)." },
+        "Nenhuma skill encontrada" => if language == 1 { "No skills found" } else { "Aucune skill trouvée" },
+        "Fechar" => if language == 1 { "Close" } else { "Fermer" },
         _ => text,
     }
 }

@@ -3,6 +3,7 @@ mod chat;
 mod composer;
 mod settings;
 mod sidebar;
+mod skills_ui;
 
 use crate::mistral::{Message, MistralClient, TokenUsage};
 use crate::storage::{safe_file_name, truncate_chars, Attachment, Language, Store, StoredMessage, ThemeChoice};
@@ -70,6 +71,8 @@ pub struct NeoChat {
     pub(super) attachments: Vec<Attachment>,
     /// Índice da mensagem do usuário em edição.
     pub(super) editing: Option<usize>,
+    pub(super) skills_open: bool,
+    pub(super) skills_filter: String,
 }
 
 impl NeoChat {
@@ -167,6 +170,8 @@ impl NeoChat {
             copied_feedback: None,
             attachments: Vec::new(),
             editing: None,
+            skills_open: false,
+            skills_filter: String::new(),
         };
         if app.has_auth() && app.store.config.cached_models.is_empty() {
             app.start_fetch_models(&cc.egui_ctx);
@@ -471,6 +476,23 @@ impl NeoChat {
         self.focus_composer = true;
     }
 
+    /// Ativa ou desativa uma skill na conversa atual (respeitando o limite de skills ativas).
+    pub(super) fn toggle_skill(&mut self, id: &str) {
+        self.ensure_active();
+        let Some(conversation) = self.store.conversations.active_mut() else {
+            return;
+        };
+        if let Some(pos) = conversation.skills.iter().position(|s| s == id) {
+            conversation.skills.remove(pos);
+        } else if conversation.skills.len() < crate::skills::MAX_ACTIVE {
+            conversation.skills.push(id.to_string());
+        } else {
+            self.status = Some(format!("Limite de {} skills ativas por conversa.", crate::skills::MAX_ACTIVE));
+            return;
+        }
+        self.save();
+    }
+
     pub(super) fn cancel_edit(&mut self) {
         self.editing = None;
         self.input.clear();
@@ -587,7 +609,9 @@ impl NeoChat {
             return;
         }
 
-        let mut history = vec![Message::new("system", self.store.config.system_prompt.clone())];
+        let system_prompt =
+            crate::skills::compose_prompt(&self.store.config.system_prompt, &conversation.skills);
+        let mut history = vec![Message::new("system", system_prompt)];
         history.extend(conversation.to_api_messages());
 
         let cache_key = if self.store.config.prompt_caching {
@@ -1139,6 +1163,7 @@ impl eframe::App for NeoChat {
         settings::confirm_delete_all(self, &ctx);
         sidebar::rename_window(self, &ctx);
         sidebar::delete_window(self, &ctx);
+        skills_ui::skills_window(self, &ctx);
     }
 
     fn on_exit(&mut self) {
