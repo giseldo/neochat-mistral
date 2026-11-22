@@ -22,6 +22,9 @@ Client de bureau Windows écrit en Rust pour discuter avec les modèles de [Mist
 - Métriques de génération lorsqu'elles sont disponibles.
 - Pièces jointes (fichiers texte et images), modification des messages envoyés et recherche dans le contenu des conversations.
 - Export des conversations en Markdown (une) ou JSON (toutes) et import JSON.
+- Pièces jointes PDF : le texte est extrait et envoyé avec le message.
+- 65 skills (instructions texte) activables par conversation, avec des suggestions selon ce que vous écrivez et une fenêtre pour lire la skill complète.
+- Panneau Inspecteur (`Ctrl+I`) qui montre exactement ce qui est envoyé au modèle : paramètres, skills, prompt système, JSON et usage des tokens.
 
 ## Prérequis de compilation
 

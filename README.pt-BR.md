@@ -22,6 +22,9 @@ Cliente desktop para Windows, desenvolvido em Rust, para conversar com modelos d
 - Métricas de geração quando disponíveis.
 - Anexos de arquivos de texto e imagens, edição de mensagens enviadas e busca no conteúdo das conversas.
 - Exportação de conversas em Markdown (uma) ou JSON (todas) e importação de JSON.
+- Anexos de PDF: o texto é extraído e enviado com a mensagem.
+- 65 skills (instruções de texto) ativáveis por conversa, com sugestões automáticas conforme o que você digita e janela para ler a skill completa.
+- Painel Inspetor (`Ctrl+I`) que mostra exatamente o que é enviado ao modelo: parâmetros, skills, prompt de sistema, JSON e uso de tokens.
 
 ## Requisitos para compilar
 

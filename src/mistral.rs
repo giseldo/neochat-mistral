@@ -257,6 +257,56 @@ impl MistralClient {
         self
     }
 
+    /// Blocos `thinking` no histórico só são aceitos com raciocínio ativo.
+    fn prepare_messages<'a>(&self, messages: &'a [Message]) -> std::borrow::Cow<'a, [Message]> {
+        let reasoning_on = matches!(self.reasoning_effort, Some(e) if e != "none");
+        if !reasoning_on && messages.iter().any(|m| m.thinking.is_some()) {
+            std::borrow::Cow::Owned(
+                messages
+                    .iter()
+                    .cloned()
+                    .map(|m| Message { thinking: None, ..m })
+                    .collect(),
+            )
+        } else {
+            std::borrow::Cow::Borrowed(messages)
+        }
+    }
+
+    fn request_body<'a>(&'a self, messages: &'a [Message]) -> ChatRequest<'a> {
+        ChatRequest {
+            model: &self.model,
+            messages,
+            stream: true,
+            temperature: self
+                .temperature
+                .map(|t| ((t as f64) * 100.0).round() / 100.0),
+            max_tokens: self.max_tokens.filter(|&m| m > 0),
+            prompt_cache_key: self.prompt_cache_key.as_deref(),
+            reasoning_effort: self.reasoning_effort,
+        }
+    }
+
+    /// JSON exatamente como será enviado à API (para inspeção); imagens aparecem só com o tamanho.
+    pub fn request_preview(&self, messages: &[Message]) -> serde_json::Value {
+        let messages = self.prepare_messages(messages);
+        let mut value = serde_json::to_value(self.request_body(&messages)).unwrap_or_default();
+        if let Some(list) = value.get_mut("messages").and_then(|m| m.as_array_mut()) {
+            for message in list {
+                let Some(blocks) = message.get_mut("content").and_then(|c| c.as_array_mut()) else {
+                    continue;
+                };
+                for block in blocks {
+                    if let Some(url) = block.get("image_url").and_then(|u| u.as_str()) {
+                        let note = format!("[imagem: {} bytes em base64]", url.len());
+                        block["image_url"] = serde_json::Value::String(note);
+                    }
+                }
+            }
+        }
+        value
+    }
+
     /// Envia o histórico, chama `on_token` a cada pedaço de texto recebido
     /// e devolve a resposta completa.
     pub async fn chat_stream(
@@ -296,31 +346,8 @@ impl MistralClient {
             bail!("informe a chave da API da Mistral nas configuracoes");
         }
 
-        // Blocos `thinking` no histórico só são aceitos com raciocínio ativo.
-        let reasoning_on = matches!(self.reasoning_effort, Some(e) if e != "none");
-        let stripped: Vec<Message>;
-        let messages = if !reasoning_on && messages.iter().any(|m| m.thinking.is_some()) {
-            stripped = messages
-                .iter()
-                .cloned()
-                .map(|m| Message { thinking: None, ..m })
-                .collect();
-            &stripped[..]
-        } else {
-            messages
-        };
-
-        let body = ChatRequest {
-            model: &self.model,
-            messages,
-            stream: true,
-            temperature: self
-                .temperature
-                .map(|t| ((t as f64) * 100.0).round() / 100.0),
-            max_tokens: self.max_tokens.filter(|&m| m > 0),
-            prompt_cache_key: self.prompt_cache_key.as_deref(),
-            reasoning_effort: self.reasoning_effort,
-        };
+        let messages = self.prepare_messages(messages);
+        let body = self.request_body(&messages);
 
         let resp = self
             .http
@@ -459,6 +486,24 @@ fn friendly_error(status: u16, body: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn request_preview_hides_image_data_and_keeps_params() {
+        let client = MistralClient::new("k".into(), "mistral-small-latest".into())
+            .with_params(Some(0.5), Some(100))
+            .with_prompt_cache_key(Some("c1".into()));
+        let messages = vec![
+            Message::new("system", "sys"),
+            Message::new("user", "oi").with_images(vec!["data:image/png;base64,AAAA".into()]),
+        ];
+        let preview = client.request_preview(&messages);
+        assert_eq!(preview["model"], "mistral-small-latest");
+        assert_eq!(preview["max_tokens"], 100);
+        assert_eq!(preview["prompt_cache_key"], "c1");
+        assert_eq!(preview["messages"][0]["content"], "sys");
+        let image = preview["messages"][1]["content"][1]["image_url"].as_str().unwrap();
+        assert!(image.starts_with("[imagem:"));
+    }
 
     #[test]
     fn user_message_with_images_serializes_blocks() {

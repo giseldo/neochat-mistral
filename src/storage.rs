@@ -156,6 +156,31 @@ pub struct StoredFile {
     pub text: String,
 }
 
+/// Máximo de caracteres de texto extraído de um PDF.
+pub const MAX_PDF_CHARS: usize = 200_000;
+
+/// Extrai o texto de um PDF em memória. PDFs só com imagens (escaneados) não têm texto.
+pub fn pdf_to_text(bytes: &[u8]) -> anyhow::Result<String> {
+    // A biblioteca pode entrar em pânico com PDFs malformados.
+    let extracted = std::panic::catch_unwind(|| pdf_extract::extract_text_from_mem(bytes))
+        .map_err(|_| anyhow::anyhow!("PDF inválido ou com formato não suportado"))?
+        .map_err(|e| anyhow::anyhow!("não foi possível ler o PDF ({e})"))?;
+    let mut text = extracted.replace("\r\n", "\n").replace('\r', "\n");
+    // Reduz sequências longas de linhas em branco geradas pela extração.
+    while text.contains("\n\n\n") {
+        text = text.replace("\n\n\n", "\n\n");
+    }
+    let text = text.trim().to_string();
+    if text.is_empty() {
+        anyhow::bail!("o PDF não contém texto (talvez seja escaneado/imagem)");
+    }
+    if text.chars().count() > MAX_PDF_CHARS {
+        let cut: String = text.chars().take(MAX_PDF_CHARS).collect();
+        return Ok(format!("{cut}\n\n[... texto do PDF truncado em {MAX_PDF_CHARS} caracteres]"));
+    }
+    Ok(text)
+}
+
 /// Limite de tamanho de um anexo (em bytes).
 pub const MAX_ATTACHMENT_BYTES: u64 = 5 * 1024 * 1024;
 
@@ -198,6 +223,10 @@ impl Attachment {
         if let Some(mime) = mime {
             let data = base64::engine::general_purpose::STANDARD.encode(&bytes);
             return Ok(Self::Image { name, data_url: format!("data:{mime};base64,{data}") });
+        }
+        if ext == "pdf" {
+            let text = pdf_to_text(&bytes).map_err(|e| anyhow::anyhow!("{name}: {e}"))?;
+            return Ok(Self::Text(StoredFile { name, text }));
         }
         let text = String::from_utf8(bytes)
             .map_err(|_| anyhow::anyhow!("{name}: não é um arquivo de texto nem uma imagem suportada"))?;
@@ -780,6 +809,68 @@ mod tests {
         conversations.remove(&second);
         assert_eq!(conversations.active.as_deref(), Some(first.as_str()));
         assert_eq!(conversations.items.len(), 1);
+    }
+
+    fn minimal_pdf(text: &str) -> Vec<u8> {
+        let stream = format!("BT /F1 18 Tf 72 720 Td ({text}) Tj ET");
+        let objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>".to_string(),
+            format!("<< /Length {} >>
+stream
+{stream}
+endstream", stream.len()),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
+        ];
+        let mut pdf = String::from("%PDF-1.4
+");
+        let mut offsets = Vec::new();
+        for (i, body) in objects.iter().enumerate() {
+            offsets.push(pdf.len());
+            pdf.push_str(&format!("{} 0 obj
+{body}
+endobj
+", i + 1));
+        }
+        let xref = pdf.len();
+        pdf.push_str(&format!("xref
+0 {}
+0000000000 65535 f 
+", objects.len() + 1));
+        for offset in offsets {
+            pdf.push_str(&format!("{offset:010} 00000 n 
+"));
+        }
+        pdf.push_str(&format!(
+            "trailer
+<< /Size {} /Root 1 0 R >>
+startxref
+{xref}
+%%EOF
+",
+            objects.len() + 1
+        ));
+        pdf.into_bytes()
+    }
+
+    #[test]
+    fn pdf_text_is_extracted_as_a_text_attachment() {
+        let dir = std::env::temp_dir().join(format!("neochat-pdf-{}", now()));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("doc.pdf");
+        fs::write(&path, minimal_pdf("Verdades nao contadas")).unwrap();
+        match Attachment::from_path(&path).unwrap() {
+            Attachment::Text(file) => {
+                assert_eq!(file.name, "doc.pdf");
+                assert!(file.text.contains("Verdades nao contadas"), "{:?}", file.text);
+            }
+            _ => panic!("esperava texto"),
+        }
+        let broken = dir.join("quebrado.pdf");
+        fs::write(&broken, b"isto nao e um pdf").unwrap();
+        assert!(Attachment::from_path(&broken).is_err());
+        fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

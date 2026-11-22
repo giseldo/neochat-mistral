@@ -4,6 +4,7 @@ mod composer;
 mod settings;
 mod sidebar;
 mod skills_ui;
+mod inspector;
 
 use crate::mistral::{Message, MistralClient, TokenUsage};
 use crate::storage::{safe_file_name, truncate_chars, Attachment, Language, Store, StoredMessage, ThemeChoice};
@@ -15,6 +16,20 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::sync::Arc;
 use std::time::Instant;
+
+/// Resumo da última requisição enviada ao modelo, para o painel de inspeção.
+pub struct RequestInfo {
+    pub model: String,
+    pub reasoning_effort: Option<&'static str>,
+    pub temperature: Option<f32>,
+    pub max_tokens: Option<u32>,
+    pub cache_key: Option<String>,
+    pub system_prompt: String,
+    pub skills: Vec<String>,
+    /// (papel, caracteres, imagens) de cada mensagem enviada.
+    pub messages: Vec<(String, usize, usize)>,
+    pub json: String,
+}
 
 pub enum Event {
     Token(String),
@@ -72,6 +87,14 @@ pub struct NeoChat {
     /// Índice da mensagem do usuário em edição.
     pub(super) editing: Option<usize>,
     pub(super) skills_open: bool,
+    pub(super) inspector_open: bool,
+    /// Skill aberta na janela de detalhe.
+    pub(super) skill_detail: Option<String>,
+    pub(super) skill_cache: CommonMarkCache,
+    /// Texto para o qual `suggestions` foi calculado.
+    pub(super) suggestion_for: String,
+    pub(super) suggestions: Vec<crate::router::Suggestion>,
+    pub(super) last_request: Option<RequestInfo>,
     pub(super) skills_filter: String,
 }
 
@@ -171,6 +194,12 @@ impl NeoChat {
             attachments: Vec::new(),
             editing: None,
             skills_open: false,
+            inspector_open: false,
+            skill_detail: None,
+            skill_cache: CommonMarkCache::default(),
+            suggestion_for: String::new(),
+            suggestions: Vec::new(),
+            last_request: None,
             skills_filter: String::new(),
         };
         if app.has_auth() && app.store.config.cached_models.is_empty() {
@@ -493,6 +522,26 @@ impl NeoChat {
         self.save();
     }
 
+    /// Recalcula as skills sugeridas quando o texto do compositor ou as skills ativas mudam.
+    pub(super) fn refresh_suggestions(&mut self) {
+        let active: Vec<String> = self
+            .store
+            .conversations
+            .active()
+            .map(|c| c.skills.clone())
+            .unwrap_or_default();
+        let key = format!("{}|{}", active.join(","), self.input);
+        if key == self.suggestion_for {
+            return;
+        }
+        self.suggestions = if active.len() >= crate::skills::MAX_ACTIVE {
+            Vec::new()
+        } else {
+            crate::router::suggest(&self.input, &active, 3)
+        };
+        self.suggestion_for = key;
+    }
+
     pub(super) fn cancel_edit(&mut self) {
         self.editing = None;
         self.input.clear();
@@ -630,6 +679,20 @@ impl NeoChat {
         )
         .with_prompt_cache_key(cache_key)
         .with_thinking(self.store.config.think);
+        self.last_request = Some(RequestInfo {
+            model: client.model.clone(),
+            reasoning_effort: client.reasoning_effort,
+            temperature: client.temperature,
+            max_tokens: client.max_tokens,
+            cache_key: client.prompt_cache_key.clone(),
+            system_prompt: history[0].content.clone(),
+            skills: conversation.skills.clone(),
+            messages: history
+                .iter()
+                .map(|m| (m.role.clone(), m.content.chars().count(), m.images.len()))
+                .collect(),
+            json: serde_json::to_string_pretty(&client.request_preview(&history)).unwrap_or_default(),
+        });
         let (tx, rx) = channel();
         let cancel = Arc::new(AtomicBool::new(false));
         let cancel_task = Arc::clone(&cancel);
@@ -911,7 +974,7 @@ impl NeoChat {
     }
 
     fn handle_shortcuts(&mut self, ctx: &Context) {
-        let (new_chat, settings, escape, toggle_sidebar, font_up, font_down, font_reset) =
+        let (new_chat, settings, escape, toggle_sidebar, font_up, font_down, font_reset, toggle_inspector) =
             ctx.input(|i| {
                 (
                     i.key_pressed(egui::Key::N) && i.modifiers.command,
@@ -921,6 +984,7 @@ impl NeoChat {
                     i.key_pressed(egui::Key::Equals) && i.modifiers.command,
                     i.key_pressed(egui::Key::Minus) && i.modifiers.command,
                     i.key_pressed(egui::Key::Num0) && i.modifiers.command,
+                    i.key_pressed(egui::Key::I) && i.modifiers.command,
                 )
             });
         if new_chat {
@@ -928,6 +992,9 @@ impl NeoChat {
         }
         if settings {
             self.open_settings();
+        }
+        if toggle_inspector {
+            self.inspector_open = !self.inspector_open;
         }
         if toggle_sidebar {
             self.toggle_sidebar();
@@ -1094,6 +1161,14 @@ impl NeoChat {
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let label = egui::RichText::new(format!("🔍 {}", i18n::tr("Inspetor"))).size(12.5).color(colors.muted);
+                        if ui
+                            .add(egui::Button::new(label).frame(self.inspector_open))
+                            .on_hover_text(i18n::tr("Mostrar o que é enviado ao modelo (Ctrl+I)"))
+                            .clicked()
+                        {
+                            self.inspector_open = !self.inspector_open;
+                        }
                         if self.sidebar_collapsed {
                             let (cfg_rect, cfg_resp) = ui.allocate_exact_size(
                                 egui::vec2(28.0, 28.0),
@@ -1156,6 +1231,7 @@ impl eframe::App for NeoChat {
         self.poll_login();
 
         sidebar::sidebar(self, ui);
+        inspector::inspector(self, ui);
         self.top_bar(ui);
         composer::composer(self, ui);
         chat::chat_area(self, ui);
@@ -1164,6 +1240,7 @@ impl eframe::App for NeoChat {
         sidebar::rename_window(self, &ctx);
         sidebar::delete_window(self, &ctx);
         skills_ui::skills_window(self, &ctx);
+        skills_ui::skill_detail_window(self, &ctx);
     }
 
     fn on_exit(&mut self) {

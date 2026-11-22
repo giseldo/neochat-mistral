@@ -22,6 +22,9 @@ A Windows desktop client written in Rust for chatting with [Mistral](https://mis
 - Generation metrics when available.
 - Text-file and image attachments, editing of sent messages, and search inside conversation content.
 - Export conversations to Markdown (one) or JSON (all) and import JSON.
+- PDF attachments: the text is extracted and sent with the message.
+- 65 skills (text instructions) you can enable per chat, with suggestions based on what you type and a window to read each full skill.
+- Inspector panel (`Ctrl+I`) showing exactly what is sent to the model: parameters, skills, system prompt, JSON and token usage.
 
 ## Build requirements
 

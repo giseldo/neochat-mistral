@@ -19,7 +19,20 @@ pub struct Skill {
     pub category: String,
     #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(default)]
+    pub activation: Activation,
     pub content: String,
+}
+
+/// Dicas de quando usar a skill (usadas pelo roteador de sugestões).
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Activation {
+    #[serde(default, rename = "useWhen")]
+    pub use_when: Vec<String>,
+    #[serde(default, rename = "avoidWhen")]
+    pub avoid_when: Vec<String>,
+    #[serde(default, rename = "exampleQueries")]
+    pub example_queries: Vec<String>,
 }
 
 impl Skill {

@@ -105,6 +105,7 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                     .map(|c| c.skills.clone())
                                     .unwrap_or_default();
                                 let mut deactivate = None;
+                                let mut view_skill = None;
                                 ui.horizontal_wrapped(|ui| {
                                     let label = if active.is_empty() {
                                         format!("✦ {}", super::i18n::tr("Skills"))
@@ -120,17 +121,57 @@ pub(super) fn composer(app: &mut NeoChat, ui: &mut Ui) {
                                     }
                                     for id in &active {
                                         let title = crate::skills::find(id).map(|s| s.title.as_str()).unwrap_or(id);
-                                        if ui
+                                        let chip = ui
                                             .small_button(format!("{} ×", crate::storage::truncate_chars(title, 24)))
-                                            .on_hover_text(super::i18n::tr("Desativar skill"))
-                                            .clicked()
-                                        {
+                                            .on_hover_text(super::i18n::tr("Clique para desativar · botão direito para ver"));
+                                        if chip.clicked() {
                                             deactivate = Some(id.clone());
                                         }
+                                        chip.context_menu(|ui| {
+                                            if ui.button(super::i18n::tr("Ver skill")).clicked() {
+                                                view_skill = Some(id.clone());
+                                                ui.close();
+                                            }
+                                        });
                                     }
                                 });
                                 if let Some(id) = deactivate {
                                     app.toggle_skill(&id);
+                                }
+                                if view_skill.is_some() {
+                                    app.skill_detail = view_skill;
+                                }
+                                ui.add_space(4.0);
+                            }
+                            app.refresh_suggestions();
+                            if !app.suggestions.is_empty() && !app.busy() {
+                                let mut accept = None;
+                                let mut view_skill = None;
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.label(RichText::new(super::i18n::tr("Sugestão:")).small().color(colors.muted));
+                                    for suggestion in &app.suggestions {
+                                        let description = crate::skills::find(suggestion.id)
+                                            .map(|s| s.description.as_str())
+                                            .unwrap_or_default();
+                                        let chip = ui
+                                            .small_button(format!("✦ {} +", suggestion.title))
+                                            .on_hover_text(format!("{description}\n\n{}", super::i18n::tr("Clique para ativar · botão direito para ver")));
+                                        if chip.clicked() {
+                                            accept = Some(suggestion.id.to_string());
+                                        }
+                                        chip.context_menu(|ui| {
+                                            if ui.button(super::i18n::tr("Ver skill")).clicked() {
+                                                view_skill = Some(suggestion.id.to_string());
+                                                ui.close();
+                                            }
+                                        });
+                                    }
+                                });
+                                if let Some(id) = accept {
+                                    app.toggle_skill(&id);
+                                }
+                                if view_skill.is_some() {
+                                    app.skill_detail = view_skill;
                                 }
                                 ui.add_space(4.0);
                             }
