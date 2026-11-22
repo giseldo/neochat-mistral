@@ -1,6 +1,6 @@
 use super::{i18n::tr, NeoChat};
 use crate::skills;
-use egui::{Align2, RichText, ScrollArea, TextEdit, Window};
+use egui::{RichText, ScrollArea, TextEdit, Window};
 use egui_commonmark::CommonMarkViewer;
 
 /// Janela para buscar e ativar skills na conversa atual.
@@ -24,7 +24,7 @@ pub(super) fn skills_window(app: &mut NeoChat, ctx: &egui::Context) {
         .collapsible(false)
         .resizable(true)
         .default_size([460.0, 480.0])
-        .anchor(Align2::LEFT_CENTER, [24.0, 0.0])
+        .default_pos(ctx.content_rect().left_center() + egui::vec2(24.0, -240.0))
         .show(ctx, |ui| {
             ui.label(RichText::new(tr("Instruções de texto que o modelo aplica nesta conversa (máx. 4).")).weak());
             ui.add_space(6.0);
@@ -103,7 +103,7 @@ pub(super) fn skill_detail_window(app: &mut NeoChat, ctx: &egui::Context) {
         .collapsible(false)
         .resizable(true)
         .default_size([620.0, 560.0])
-        .anchor(Align2::RIGHT_CENTER, [-24.0, 0.0])
+        .default_pos(ctx.content_rect().right_center() + egui::vec2(-644.0, -280.0))
         .show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.label(RichText::new(&skill.category).strong());

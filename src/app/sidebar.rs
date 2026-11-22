@@ -444,7 +444,7 @@ pub(super) fn rename_window(app: &mut NeoChat, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .default_pos(ctx.content_rect().center() - egui::vec2(200.0, 70.0))
         .show(ctx, |ui| {
             ui.add_space(4.0);
             ui.label(super::i18n::tr("Novo título:"));
@@ -515,7 +515,7 @@ pub(super) fn delete_window(app: &mut NeoChat, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .default_pos(ctx.content_rect().center() - egui::vec2(200.0, 70.0))
         .show(ctx, |ui| {
             ui.label(format!("Excluir \"{title}\"?"));
             ui.label(RichText::new(super::i18n::tr("Essa ação não pode ser desfeita.")).weak());

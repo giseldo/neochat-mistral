@@ -1,6 +1,6 @@
 use super::NeoChat;
 use crate::storage::{Language, ThemeChoice, DEFAULT_TEMPERATURE};
-use egui::{Align2, Button, ComboBox, RichText, Slider, TextEdit, Window};
+use egui::{Button, ComboBox, RichText, Slider, TextEdit, Window};
 
 pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
     if !app.settings_open {
@@ -43,7 +43,7 @@ pub(super) fn settings_window(app: &mut NeoChat, ctx: &egui::Context) {
         .default_height(max_height.min(720.0))
         .max_width(max_width)
         .max_height(max_height)
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .default_pos(screen.center() - egui::vec2(max_width.min(530.0) / 2.0, max_height.min(720.0) / 2.0))
         .show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
                 for (index, label) in [super::i18n::tr("Conta"), super::i18n::tr("Modelo"), super::i18n::tr("Geração"), super::i18n::tr("Aparência"), super::i18n::tr("Sobre"), super::i18n::tr("Conversas")].iter().enumerate() {
@@ -324,7 +324,7 @@ pub(super) fn confirm_delete_all(app: &mut NeoChat, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .default_pos(ctx.content_rect().center() - egui::vec2(200.0, 70.0))
         .show(ctx, |ui| {
             ui.label(super::i18n::tr("Excluir todas as conversas e suas mensagens deste dispositivo?"));
             ui.label(RichText::new(super::i18n::tr("Essa ação não pode ser desfeita.")).weak());
